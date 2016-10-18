@@ -1,0 +1,31 @@
+{
+  "name": "sensorthings",
+  "version": "0.0.1",
+  "description": "Node implementation of the OGC SensorThings API",
+  "main": "dist/sensorthings.js",
+  "scripts": {
+    "build": "babel src --presets babel-preset-es2015 --out-dir dist",
+    "prepublish": "npm run build",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "sensorthings",
+    "ogc",
+    "sensors",
+    "sensorweb",
+    "mozilla"
+  ],
+  "author": "Mozilla Connected Devices",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:mozilla-sensorweb/sensorthings.git"
+  },
+  "license": "MPL-2.0",
+  "dependencies": {
+    "express": "^4.14.0"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.16.0",
+    "babel-preset-es2015": "^6.16.0"
+  }
+}

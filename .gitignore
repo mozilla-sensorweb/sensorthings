@@ -1,0 +1,14 @@
+# Logs
+npm-debug.log*
+
+# OSX
+.DS_Store
+
+# Dependency directories
+node_modules
+
+# Vi
+*.swp
+
+# Distribution dir.
+dist/
