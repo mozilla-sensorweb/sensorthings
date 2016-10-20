@@ -1,4 +1,4 @@
-import express  from 'express';
+import express from 'express';
 
 const resourceEndpoints = [
   'Datastreams',
@@ -6,6 +6,7 @@ const resourceEndpoints = [
   'HistoricalLocations',
   'Locations',
   'Observations',
+  'ObservedProperty',
   'Sensors',
   'Things'
 ];
@@ -54,6 +55,7 @@ let router = express.Router();
  *  }]
  * }
  **/
+
 router.get('/', (req, res) => {
   const prepath = req.protocol + '://' + req.hostname + req.baseUrl + '/';
 

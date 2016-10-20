@@ -19,3 +19,9 @@ app.use('/', sensorthings);
 
 app.listen(8080, () => console.log('Running on localhost:8080'));
 ```
+
+# Running the tests
+
+```shell
+npm run test-watch
+```

@@ -12,3 +12,7 @@ node_modules
 
 # Distribution dir.
 dist/
+
+# coverage data
+coverage/
+.nyc_output/
