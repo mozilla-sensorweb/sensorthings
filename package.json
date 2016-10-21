@@ -5,11 +5,15 @@
   "main": "dist/sensorthings.js",
   "scripts": {
     "build": "babel src --presets babel-preset-es2015 --out-dir dist",
+    "coverage": "./node_modules/.bin/nyc report --reporter=text-lcov | ./node_modules/coveralls/bin/coveralls.js",
+    "example": "npm run build && node example/example.js",
+    "posttest": "./scripts/posttest.sh",
+    "preexample": "./scripts/preexample.sh",
     "prepublish": "npm run build",
+    "pretest": "./scripts/pretest.sh",
     "test-nocoverage": "NODE_ENV=test ./node_modules/.bin/mocha --compilers js:babel-register test/test_*.js",
     "test-watch": "nodemon -q -x npm test",
-    "test": "./node_modules/.bin/nyc npm run test-nocoverage",
-    "coverage": "./node_modules/.bin/nyc report --reporter=text-lcov | ./node_modules/coveralls/bin/coveralls.js"
+    "test": "./node_modules/.bin/nyc npm run test-nocoverage"
   },
   "keywords": [
     "sensorthings",
@@ -25,7 +29,9 @@
   },
   "license": "MPL-2.0",
   "dependencies": {
-    "express": "^4.14.0"
+    "express": "^4.14.0",
+    "pg": "^6.1.0",
+    "sequelize": "^3.24.4"
   },
   "devDependencies": {
     "babel-cli": "^6.16.0",
