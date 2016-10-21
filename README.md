@@ -1,5 +1,7 @@
 # SensorThings API
 [![License](https://img.shields.io/badge/license-MPL2-blue.svg)](https://raw.githubusercontent.com/sensorweb/sensorthings/master/LICENSE)
+[![Build Status](https://travis-ci.org/mozilla-sensorweb/sensorthings.svg?branch=master)](https://travis-ci.org/mozilla-sensorweb/sensorthings)
+[![Coverage Status](https://coveralls.io/repos/github/mozilla-sensorweb/sensorthings/badge.svg)](https://coveralls.io/github/mozilla-sensorweb/sensorthings)
 
 Node implementation of the OGC SensorThings API.
 
