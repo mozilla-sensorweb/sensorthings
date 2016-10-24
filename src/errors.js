@@ -1,9 +1,19 @@
 // errno
-const errnos = {};
+const errnos = {
+  ERRNO_INTERNAL_ERROR: 500,
+  ERRNO_BAD_REQUEST: 400,
+  ERRNO_RESOURCE_NOT_FOUND: 404
+};
+
 exports.errnos = errnos;
 
 // Error messages.
-const errors = {};
+const errors = {
+  INTERNAL_ERROR: 'Internal Server Error',
+  BAD_REQUEST   : 'Bad Request',
+  NOT_FOUND     : 'Resource Not Found'
+};
+
 exports.errors = errors;
 
 // Model errors.

@@ -1,6 +1,18 @@
-import express  from 'express';
+import express    from 'express';
+import db         from '../models/db';
+import response   from '../response';
+import {
+  ApiError,
+  ERRNO_INTERNAL_ERROR,
+  ERRNO_RESOURCE_NOT_FOUND,
+  ERRNO_BAD_REQUEST,
+  INTERNAL_ERROR,
+  NOT_FOUND,
+  BAD_REQUEST
+} from '../errors';
 
-let router = express.Router();
+let router = express.Router({ mergeParams: true });
+const excludedFields = ['createdAt', 'updatedAt'];
 
 /**
  * Implementation of 8.3.1 "Thing"
@@ -47,8 +59,98 @@ let router = express.Router();
  * }
  **/
 
-router.get('/Things', (req, res) => {
-  res.status(200).send();
+const resource = 'Things';
+
+router.get('/', (req, res) => {
+  db().then(models => {
+    if (req.params && req.params[0]) {
+      models.Things.findById(req.params[0], {
+        attributes: {
+          exclude: excludedFields
+        }
+      }).then(thing => {
+        if (!thing) {
+          return ApiError(res, 404, ERRNO_RESOURCE_NOT_FOUND, NOT_FOUND);
+        }
+        res.status(200).json(response.generate(thing));
+      }).catch(() => {
+        ApiError(res, 404, ERRNO_RESOURCE_NOT_FOUND, NOT_FOUND);
+      });
+    } else {
+      models.Things.findAll({
+        attributes: {
+          exclude: excludedFields
+        }
+      }).then(things => {
+        res.status(200).json(response.generate(things));
+      });
+    }
+  }).catch(() => {
+    ApiError(res, 500, ERRNO_INTERNAL_ERROR, INTERNAL_ERROR);
+  });
+});
+
+// XXX #9 [Things router] Implement associations to other models and integrity
+
+router.post('/', (req, res) => {
+  db().then(models => {
+    models.Things.create(req.body).then(createdThing => {
+      // XXX #13 [Things router] response urls should be absolute
+      res.location('/' + resource + '/' + createdThing.id);
+      res.status(201).send();
+    }).catch(() => {
+      ApiError(res, 400, ERRNO_BAD_REQUEST, BAD_REQUEST);
+    });
+  }).catch(() => {
+    ApiError(res, 500, ERRNO_INTERNAL_ERROR, INTERNAL_ERROR);
+  });
+});
+
+// XXX #11 [Things router] Check that entity does not contain related entities
+// as inline content in PATCH requests
+// XXX #12 [Things router] Handle navigation properties in PATCH requests
+
+router.patch('/', (req, res) => {
+  if (!req.params || !req.params[0]) {
+    return ApiError(res, 404, ERRNO_RESOURCE_NOT_FOUND, NOT_FOUND);
+  }
+
+  db().then(models => {
+    Reflect.deleteProperty(req.body, 'id');
+    models.updateInstance('Things', req.params[0], req.body, excludedFields)
+    .then(updatedThing => {
+      res.status(200).json(response.generate(updatedThing));
+    }).catch((err) => {
+      err.type = err.type || INTERNAL_ERROR;
+      switch (err.type) {
+        case NOT_FOUND:
+          return ApiError(res, 404, ERRNO_RESOURCE_NOT_FOUND, NOT_FOUND);
+        case INTERNAL_ERROR:
+        default:
+          return ApiError(res, 500, ERRNO_INTERNAL_ERROR, INTERNAL_ERROR);
+      }
+    });
+  }).catch(() => {
+    ApiError(res, 500, ERRNO_INTERNAL_ERROR, INTERNAL_ERROR);
+  });
+});
+
+router.delete('/', (req, res) => {
+  if (!req.params || !req.params[0]) {
+    return ApiError(res, 404, ERRNO_RESOURCE_NOT_FOUND, NOT_FOUND);
+  }
+
+  db().then(models => {
+    models.Things.destroy({
+      where: { id: req.params[0] }
+    }).then(() => {
+      res.status(204).send();
+    }).catch(() => {
+      ApiError(res, 404, ERRNO_RESOURCE_NOT_FOUND, NOT_FOUND);
+    });
+  }).catch(() => {
+    ApiError(res, 500, ERRNO_INTERNAL_ERROR, INTERNAL_ERROR);
+  });
 });
 
 module.exports = router;

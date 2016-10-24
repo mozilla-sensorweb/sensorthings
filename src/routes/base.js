@@ -6,7 +6,7 @@ const resourceEndpoints = [
   'HistoricalLocations',
   'Locations',
   'Observations',
-  'ObservedProperty',
+  'ObservedProperties',
   'Sensors',
   'Things'
 ];
@@ -69,4 +69,4 @@ router.get('/', (req, res) => {
   res.status(200).json({ value: value });
 });
 
-module.exports = router;
+exports.baseRouter = router;

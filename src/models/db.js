@@ -8,22 +8,50 @@ import fs        from 'fs';
 import path      from 'path';
 import Sequelize from 'sequelize';
 
-let db = null;
+import {
+  NOT_FOUND
+} from '../errors';
+
+
+const IDLE           = 0
+const INITIALIZING   = 1;
+const READY          = 2;
+
+const Deferred = function Deferred () {
+  this.promise = new Promise((resolve, reject) => {
+    this.resolve = resolve;
+    this.reject = reject;
+  });
+
+  return this;
+};
+
+let deferreds = [];
+
+let state = IDLE;
+let db    = null;
 
 module.exports = config => {
-  if (db) {
-    return db;
+  if (state === READY) {
+    return Promise.resolve(db);
   }
 
-  const { name, user, pass, host, port } = config;
-  if (!name || !user || !pass || !host || !port) {
-    throw new Error('Missing or malformed DB config');
+  let deferred = new Deferred();
+  deferreds.push(deferred);
+
+  if (state === INITIALIZING) {
+    return deferred.promise;
   }
+
+  state = INITIALIZING;
+
+  const { name, user, pass, host, port } = config;
 
   const sequelize = new Sequelize(name, user, pass, {
     host,
     port,
-    dialect: 'postgres'
+    dialect: 'postgres',
+    logging: false
   });
 
   db = {};
@@ -46,5 +74,40 @@ module.exports = config => {
   db.sequelize = sequelize;
   db.Sequelize = Sequelize;
 
-  return db;
+  // Transaction method that updates an specific model instance and
+  // returns the updated object
+  db.updateInstance = (model, instanceId, values, excludedFields) => {
+    return db.sequelize.transaction(t1 => {
+      return db[model].update(values, {
+        where: { id: instanceId }
+      }, { transaction: t1 }).then(affected => {
+        const affectedRows = affected[0];
+        if (affectedRows === 1) {
+          return db[model].findById(instanceId, {
+            attributes: {
+              exclude: excludedFields
+            },
+            transaction: t1
+          });
+        }
+
+        return new Promise((resolve, reject) => {
+          reject({ type: NOT_FOUND });
+        })
+      });
+    });
+  };
+
+  return db.sequelize.sync().then(() => {
+    while (deferreds.length) {
+      deferreds.pop().resolve(db);
+    }
+    state = READY;
+
+    return db;
+  }).catch(err => {
+    while (deferreds.length) {
+      deferreds.pop().reject(err);
+    }
+  });
 };
