@@ -51,6 +51,12 @@ module.exports = (sequelize, DataTypes) => {
       }
     },
     metadata: { type: DataTypes.STRING(255), allowNull: false }
+  }, {
+    classMethods: {
+      associate: db => {
+        Sensor.hasMany(db.Datastreams);
+      }
+    }
   });
 
   return Sensor;

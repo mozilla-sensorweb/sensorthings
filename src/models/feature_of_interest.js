@@ -63,6 +63,12 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.GEOMETRY('POINT', 4326),
       allowNull: false
     }
+  }, {
+    classMethods: {
+      associate: db => {
+        FeatureOfInterest.hasMany(db.Observations);
+      }
+    }
   });
 
   return FeatureOfInterest;

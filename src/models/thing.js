@@ -51,6 +51,14 @@ module.exports = (sequelize, DataTypes) => {
     name: { type: DataTypes.STRING(255), allowNull: false },
     description: { type: DataTypes.STRING(500), allowNull: false },
     properties: { type: DataTypes.JSONB }
+  }, {
+    classMethods: {
+      associate: db => {
+        Thing.belongsToMany(db.Locations, { through: 'ThingLocations' });
+        Thing.hasMany(db.HistoricalLocations);
+        Thing.hasMany(db.Datastreams);
+      }
+    }
   });
 
   return Thing;
