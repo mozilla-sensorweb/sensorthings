@@ -56,7 +56,8 @@ module.exports = (sequelize, DataTypes) => {
     phenomenonTime: { type: DataTypes.DATE, allowNull: false },
     result: { type: DataTypes.JSONB, allowNull: false },
     resultTime: { type: DataTypes.DATE, allowNull: false },
-    // XXX resultQuality: {},
+    // XXX Define resultQuality property #16
+    // resultQuality: {},
     validTime: { type: DataTypes.DATE },
     parameters: { type: DataTypes.ARRAY(DataTypes.JSON) }
   }, {

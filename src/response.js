@@ -12,37 +12,43 @@ const FIELDS_TO_FILTER = [
   'updatedAt'
 ];
 
-const formatItem = function formatItem (item) {
-  const itemData = item.dataValues;
+// XXX Response urls should be absolute #13.
+const formatItem = (item, associations) => {
+  // We need to get the data directly from item (and not item.dataValues) so
+  // getters and setters of the models are called.
   const resourceName = item.$modelOptions.name.plural;
-
   let formatedItem = {
-    '@iot.id': itemData.id,
-    '@iot.selfLink': '/' + resourceName + '(' + itemData.id + ')'
+    '@iot.id': item.id,
+    '@iot.selfLink': '/' + resourceName + '(' + item.id + ')'
   };
 
-  Object.keys(itemData).forEach(key => {
+  associations && associations.forEach(association => {
+    formatedItem[association + '@iot.navigationLink'] =
+      '/' + resourceName + '(' + item.id + ')/' + association;
+  });
+
+  Object.keys(item.dataValues).forEach(key => {
     if (FIELDS_TO_FILTER.indexOf(key) === -1) {
-      formatedItem[key] = itemData[key];
+      formatedItem[key] = item[key];
     }
   });
 
   return formatedItem;
 }
 
-const generate = function generate (resource) {
+const generate = (resource, associations) => {
   if (resource && Array.isArray(resource)) {
     let response = {};
     response['@iot.count'] = resource.length;
     response.value = [];
     resource.forEach(item => {
-      response.value.push(formatItem(item));
+      response.value.push(formatItem(item, associations));
     });
 
     return response;
   }
 
-  return formatItem(resource);
+  return formatItem(resource, associations);
 }
 
 module.exports = {

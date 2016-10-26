@@ -55,7 +55,8 @@ const excludedFields = ['createdAt', 'updatedAt'];
  *      {...}
  *    }
  *    ]
- *    "@iot.nextLink":"http://example.org/v1.0/ObservedProperties?$top=5&$skip=5"
+ *    "@iot.nextLink":
+ *      "http://example.org/v1.0/ObservedProperties?$top=5&$skip=5"
  * }
  **/
 
@@ -119,13 +120,12 @@ router.patch('/', (req, res) => {
     Reflect.deleteProperty(req.body, 'id');
     models.updateInstance('Things', req.params[0], req.body, excludedFields)
     .then(updatedThing => {
+      res.location('/' + resource + '/' + updatedThing.id);
       res.status(200).json(response.generate(updatedThing));
-    }).catch((err) => {
-      err.type = err.type || INTERNAL_ERROR;
-      switch (err.type) {
+    }).catch(err => {
+      switch (err.name) {
         case NOT_FOUND:
           return ApiError(res, 404, ERRNO_RESOURCE_NOT_FOUND, NOT_FOUND);
-        case INTERNAL_ERROR:
         default:
           return ApiError(res, 500, ERRNO_INTERNAL_ERROR, INTERNAL_ERROR);
       }

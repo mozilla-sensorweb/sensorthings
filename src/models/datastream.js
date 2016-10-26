@@ -72,7 +72,8 @@ module.exports = (sequelize, DataTypes) => {
     name: { type: DataTypes.STRING(255), allowNull: false },
     description: { type: DataTypes.STRING(500), allowNull: false },
     unitOfMeasurement: { type: DataTypes.JSONB, allowNull: false },
-    observationType: { type: DataTypes.INTEGER, allowNull: false },
+    // XXX  Define observationType property #15
+    // observationType: { type: DataTypes.INTEGER, allowNull: false },
     observedArea: { type: DataTypes.GEOMETRY('POINT', 4326) },
     phenomenonTime: { type: DataTypes.DATE },
     resultTime: { type: DataTypes.DATE }

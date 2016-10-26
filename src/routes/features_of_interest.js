@@ -40,7 +40,8 @@ let router = express.Router();
  *    },
  *    {...}
  *    ]
- *    "@iot.nextLink":"http://example.org/v1.0/ObservedProperties?$top=5&$skip=5"
+ *    "@iot.nextLink":
+ *      "http://example.org/v1.0/ObservedProperties?$top=5&$skip=5"
  * }
  **/
 

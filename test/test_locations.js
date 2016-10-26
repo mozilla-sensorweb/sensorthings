@@ -4,7 +4,7 @@ import supertest     from 'supertest';
 
 const server = supertest.agent(app);
 
-describe('Things API', () => {
+describe('Locations API', () => {
   it('should exist', done => {
     server.get('/Locations')
 // XXX      .expect('Content-type', /json/)

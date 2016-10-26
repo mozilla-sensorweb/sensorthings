@@ -28,7 +28,8 @@ describe('Things API', () => {
         models[resource].create(defaultThingObject).then(createdThing => {
           id = createdThing.id;
           responseList.value[0]['@iot.id'] = id;
-          responseList.value[0]['@iot.selfLink'] = '/' + resource + '(' + id + ')';
+          responseList.value[0]['@iot.selfLink'] =
+            '/' + resource + '(' + id + ')';
           done();
         });
       });
