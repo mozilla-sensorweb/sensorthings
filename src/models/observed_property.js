@@ -42,6 +42,12 @@ module.exports = (sequelize, DataTypes) => {
       }
     },
     description: { type: DataTypes.STRING(500), allowNull: false },
+  }, {
+    classMethods: {
+      associate: db => {
+        ObservedProperty.hasMany(db.Datastreams);
+      }
+    }
   });
 
   return ObservedProperty;

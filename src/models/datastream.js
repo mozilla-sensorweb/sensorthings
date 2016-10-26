@@ -76,6 +76,15 @@ module.exports = (sequelize, DataTypes) => {
     observedArea: { type: DataTypes.GEOMETRY('POINT', 4326) },
     phenomenonTime: { type: DataTypes.DATE },
     resultTime: { type: DataTypes.DATE }
+  }, {
+    classMethods: {
+      associate: db => {
+        Datastream.belongsTo(db.Things);
+        Datastream.belongsTo(db.Sensors);
+        Datastream.belongsTo(db.ObservedProperties);
+        Datastream.hasMany(db.Observations);
+      }
+    }
   });
 
   return Datastream;

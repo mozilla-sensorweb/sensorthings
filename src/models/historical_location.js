@@ -30,9 +30,16 @@
 module.exports = (sequelize, DataTypes) => {
   const HistoricalLocation = sequelize.define('HistoricalLocations', {
     time: { type: DataTypes.DATE, allowNull: false }
+  }, {
+    classMethods: {
+      associate: db => {
+        HistoricalLocation.belongsTo(db.Things);
+        HistoricalLocation.belongsToMany(db.Locations, {
+          through: 'HistoricalLocationsLocations'
+        });
+      }
+    }
   });
-
-  // XXX relations
 
   return HistoricalLocation;
 }

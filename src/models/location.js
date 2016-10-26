@@ -67,6 +67,15 @@ module.exports = (sequelize, DataTypes) => {
       }
     },
     location: { type: DataTypes.GEOMETRY('POINT', 4326), allowNull: false }
+  }, {
+    classMethods: {
+      associate: db => {
+        Location.belongsToMany(db.Things, { through: 'ThingLocations' });
+        Location.belongsToMany(db.HistoricalLocations, {
+          through: 'HistoricalLocationsLocations'
+        });
+      }
+    }
   });
 
   return Location;

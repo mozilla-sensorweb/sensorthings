@@ -59,6 +59,13 @@ module.exports = (sequelize, DataTypes) => {
     // XXX resultQuality: {},
     validTime: { type: DataTypes.DATE },
     parameters: { type: DataTypes.ARRAY(DataTypes.JSON) }
+  }, {
+    classMethods: {
+      associate: db => {
+        Observation.belongsTo(db.Datastreams);
+        Observation.belongsTo(db.FeaturesOfInterest);
+      }
+    }
   });
 
   return Observation;
