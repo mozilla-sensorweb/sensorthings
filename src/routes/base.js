@@ -66,7 +66,7 @@ router.get('/', (req, res) => {
     };
   });
 
-  res.status(200).send({ value: value });
+  res.status(200).json({ value: value });
 });
 
 module.exports = router;

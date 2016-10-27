@@ -23,9 +23,7 @@ module.exports = (config) => {
     throw new Error('Missing or malformed config');
   }
 
-  db(config.db).sequelize.sync().then(() => {
-    console.log('Database connection opened');
-  });
+  db(config.db).sequelize.sync();
 
   let router = express.Router();
   router.get('/', base);
