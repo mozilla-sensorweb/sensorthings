@@ -10,7 +10,7 @@ const resources = [
   'HistoricalLocations',
   'Locations',
   'Observations',
-  'ObservedProperty',
+  'ObservedProperties',
   'Sensors',
   'Things'
 ];

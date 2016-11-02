@@ -3,7 +3,7 @@ import express from 'express';
 let router = express.Router();
 
 /**
- * Implementation of 8.3.8 "FeaturesOfInterest"
+ * Implementation of 8.3.3 "HistoricalLocation"
  * The OGC SensorThings API follows the ITU-T definition, i.e., with regard
  * to the Internet of Things, a thing is an object of the physical world
  * (physical things) or the information world (virtual things) that is capable
@@ -23,22 +23,24 @@ let router = express.Router();
  * and one with name 'url' containing the URL of the entity set, which may be
  * an absolute or a relative URL.
  * Example Request:
- * http://example.org/v1.0/ObservedProperties
+ * http://example.org/v1.0/HistoricalLocations
  *
  * Example Response:
  * {
  *   "@iot.count":84,
  *   "value": [
- *    "@iot.id": 1,
- *      "@iot.selfLink": "http://example.org/v1.0/ObservedProperties(1)",
- *      "Datastreams@iot.navigationLink": "ObservedProperties(1)/Datastreams",
- *      "description": "The dewpoint temperature is the temperature to which
- *                      the air must be cooled, at constant pressure, for
- *                      dew to form. As the grass and other objects near the
- *                      ground cool to the dewpoint, some of the water vapor in
- *                      the atmosphere condenses into...",
- *      "name": "DewPoint Temperature",
- *      "definition": "http://dbpedia.org/page/Dew_point"
+ *    {
+ *      "@iot.id": 1,
+ *      "@iot.selfLink": "http://example.org/v1.0/HistoricalLocations(1)",
+ *      "Locations@iot.navigationLink": "HistoricalLocations(1)/Locations",
+ *      "Thing@iot.navigationLink": "HistoricalLocations(1)/Thing",
+ *      "time": "2015-01-25T12:00:00-07:00"
+ *    }, {
+ *      "@iot.id": 1,
+ *      "@iot.selfLink": "http://example.org/v1.0/HistoricalLocations(2)",
+ *      "Locations@iot.navigationLink": "HistoricalLocations(2)/Locations",
+ *      "Thing@iot.navigationLink": "HistoricalLocations(2)/Thing",
+ *      "time": "2015-01-25T13:00:00-07:00"
  *    },
  *    {...}
  *    ]
@@ -46,7 +48,7 @@ let router = express.Router();
  * }
  **/
 
-router.get('/ObservedProperties', (req, res) => {
+router.get('/', (req, res) => {
   res.status(200).send();
 });
 
