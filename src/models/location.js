@@ -75,6 +75,16 @@ module.exports = (sequelize, DataTypes) => {
           through: 'HistoricalLocationsLocations'
         });
       }
+    },
+    hooks: {
+      beforeValidate: (data) => {
+        if (data.location) {
+          data.location.crs = {
+            type: 'name',
+            properties: { name: 'EPSG:4326' }
+          };
+        }
+      }
     }
   });
 

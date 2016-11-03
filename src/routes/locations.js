@@ -1,6 +1,10 @@
-import express from 'express';
+import express    from 'express';
+import db         from '../models/db';
+import response   from '../response';
+import * as Err from '../errors';
 
-let router = express.Router();
+let router = express.Router({ mergeParams: true });
+const excludedFields = ['createdAt', 'updatedAt'];
 
 /**
  * Implementation of 8.3.2 "Location"
@@ -47,8 +51,113 @@ let router = express.Router();
  * }
  **/
 
+const resource = 'Locations';
+
 router.get('/', (req, res) => {
-  res.status(200).send();
+  db().then(models => {
+    if (req.params && req.params[0]) {
+      models[resource].findById(req.params[0], {
+        attributes: {
+          exclude: excludedFields
+        }
+      }).then(location => {
+        if (!location) {
+          return Err.ApiError(res, 404, Err.ERRNO_RESOURCE_NOT_FOUND,
+                              Err.NOT_FOUND);
+        }
+        res.status(200).json(response.generate(location));
+      }).catch(() => {
+        Err.ApiError(res, 404, Err.ERRNO_RESOURCE_NOT_FOUND, Err.NOT_FOUND);
+      });
+    } else {
+      models[resource].findAll({
+        attributes: {
+          exclude: excludedFields
+        }
+      }).then(locations => {
+        res.status(200).json(response.generate(locations));
+      });
+    }
+  }).catch(() => {
+    Err.ApiError(res, 500, Err.ERRNO_INTERNAL_ERROR, Err.INTERNAL_ERROR);
+  });
+});
+
+// XXX  [Location router] Implement associations to other models and integrity
+
+router.post('/', (req, res) => {
+  db().then((models) => {
+    models[resource].create(req.body)
+    .then(location => {
+      // XXX #13 Response urls should be absolute
+      res.location('/' + resource + '(' + location.id + ')');
+      res.status(201).send(response.generate(location));
+    }).catch(err => {
+      switch (err.name) {
+        case Err.modelErrors[Err.VALIDATION_ERROR]:
+          Err.ApiError(res, 400, Err.ERRNO_VALIDATION_ERROR, Err.BAD_REQUEST,
+                     JSON.stringify(err.errors));
+          break;
+        default:
+          Err.ApiError(res, 400, Err.ERRNO_BAD_REQUEST, Err.BAD_REQUEST,
+                     JSON.stringify(err.errors));
+      }
+    });
+  }).catch(() => {
+    Err.ApiError(res, 500, Err.ERRNO_INTERNAL_ERROR, Err.INTERNAL_ERROR);
+  });
+});
+
+router.patch('', (req, res) => {
+  const id = req.params && req.params[0];
+  if (!id) {
+    return Err.ApiError(res, 404, Err.ERRNO_RESOURCE_NOT_FOUND, Err.NOT_FOUND);
+  }
+
+  db().then(models => {
+    Reflect.deleteProperty(req.body, 'id');
+    models.updateInstance(resource, id, req.body, excludedFields)
+    .then(location => {
+      res.location('/' + resource + '(' + id + ')');
+      res.status(200).json(response.generate(location));
+    }).catch(err => {
+      switch (err.name) {
+        case Err.modelErrors[Err.VALIDATION_ERROR]:
+          Err.ApiError(res, 400, Err.ERRNO_VALIDATION_ERROR, Err.BAD_REQUEST,
+                     JSON.stringify(err.errors));
+          break;
+        case Err.NOT_FOUND:
+          Err.ApiError(res, 404, Err.ERRNO_RESOURCE_NOT_FOUND, Err.NOT_FOUND,
+                     JSON.stringify(err.errors));
+          break;
+        default:
+          Err.ApiError(res, 400, Err.ERRNO_BAD_REQUEST, Err.BAD_REQUEST,
+                     JSON.stringify(err.errors));
+      }
+    });
+  }).catch(() => {
+    Err.ApiError(res, 500, Err.ERRNO_INTERNAL_ERROR, Err.INTERNAL_ERROR);
+  });
+});
+
+router.delete('', (req, res) => {
+  if (!req.params || !req.params[0]) {
+    return Err.ApiError(res, 404, Err.ERRNO_RESOURCE_NOT_FOUND, Err.NOT_FOUND);
+  }
+
+  db().then(models => {
+    models[resource].destroy({
+      where: { id: req.params[0] }
+    }).then(count => {
+      if (!count) {
+        return Err.ApiError(res, 404, Err.ERRNO_RESOURCE_NOT_FOUND,
+                            Err.NOT_FOUND);
+      }
+      res.status(204).send();
+    });
+  }).catch(() => {
+    Err.ApiError(res, 500, Err.ERRNO_INTERNAL_ERROR, Err.INTERNAL_ERROR);
+  });
 });
 
 module.exports = router;
