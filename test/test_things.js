@@ -1,7 +1,7 @@
-import should        from 'should';
-import supertest     from 'supertest';
 import app           from './server';
 import db            from '../src/models/db';
+import should        from 'should';
+import supertest     from 'supertest';
 
 const server = supertest.agent(app);
 const resource = 'Things';

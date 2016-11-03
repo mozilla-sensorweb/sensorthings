@@ -4,6 +4,10 @@
 
 const navigationLink = '@iot.navigationLink';
 
+export const createdAt      = 'createdAt';
+export const updatedAt      = 'updatedAt';
+export const excludedFields = [createdAt, updatedAt];
+
 export const encodingTypes = {
   UNKNOWN: 'unknown',
   GEO_JSON: 'application/vnd.geo+json',
@@ -14,9 +18,32 @@ export const encodingTypes = {
   TYPE_DESCRIPTION: 'http://schema.org/description'
 };
 
-export const datastreams               = 'Datastreams';
+export const datastreams = 'Datastreams';
 export const datastreamsNavigationLink = datastreams + navigationLink;
 
-export const iotCount      = '@iot.count';
-export const iotId         = '@iot.id';
-export const iotSelfLink   = '@iot.selfLink';
+export const featuresOfInterest = 'FeaturesOfInterest';
+export const featuresOfInterestNavitationLink =
+  featuresOfInterest + navigationLink;
+
+export const historicalLocations = 'HistoricalLocations';
+export const historicalLocationsNavigationLink =
+  historicalLocations + navigationLink;
+
+export const locations = 'Locations';
+export const locationsNavitationLink = locations + navigationLink;
+
+export const observedProperties = 'ObservedProperties';
+export const observedPropertiesNavigationLink =
+  observedProperties + navigationLink;
+
+export const sensors = 'Sensors';
+export const sensorsNavigationLink = sensors + navigationLink;
+
+export const things = 'Things';
+export const thingsNavigationLink = things + navigationLink;
+
+export const thingId = 'ThingId';
+
+export const iotCount = '@iot.count';
+export const iotId = '@iot.id';
+export const iotSelfLink = '@iot.selfLink';

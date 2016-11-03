@@ -503,5 +503,4 @@ describe('Sensors API', () => {
       deleteSuccess(done);
     });
   });
-
 });

@@ -1,4 +1,9 @@
 import resource    from './resource';
+import {
+  excludedFields,
+  historicalLocations,
+  thingId
+} from '../constants';
 
 /**
  * Implementation of 8.3.3 "HistoricalLocation"
@@ -47,7 +52,7 @@ import resource    from './resource';
  * }
  **/
 
-const endpoint = 'HistoricalLocations';
-const excludedFields = ['createdAt', 'updatedAt', 'ThingId'];
+const endpoint = historicalLocations;
+const exclude  = excludedFields.concat([thingId]);
 
-module.exports = resource(endpoint, excludedFields);
+module.exports = resource(endpoint, exclude);

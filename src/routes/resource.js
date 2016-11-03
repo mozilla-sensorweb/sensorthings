@@ -1,36 +1,33 @@
-import express    from 'express';
 import db         from '../models/db';
+import express    from 'express';
 import response   from '../response';
-import * as Err   from '../errors';
 
-module.exports = function resource (endpoint, excludedFields, associations) {
+import * as ERR   from '../errors';
+
+module.exports = function resource (endpoint, exclude, associations) {
   let router = express.Router({ mergeParams: true });
 
   router.get('', (req, res) => {
     db().then(models => {
       if (req.params && req.params[0]) {
         models[endpoint].findById(req.params[0], {
-          attributes: {
-            exclude: excludedFields
-          }
+          attributes: { exclude }
         }).then(instance => {
           if (!instance) {
-            return Err.ApiError(res, 404, Err.ERRNO_RESOURCE_NOT_FOUND,
-                                Err.NOT_FOUND);
+            return ERR.ApiError(res, 404, ERR.ERRNO_RESOURCE_NOT_FOUND,
+                                ERR.NOT_FOUND);
           }
           res.status(200).send(response.generate(instance, associations));
         });
       } else {
         models[endpoint].findAll({
-          attributes: {
-            exclude: excludedFields
-          }
+          attributes: { exclude }
         }).then(instances => {
           res.status(200).send(response.generate(instances, associations));
         });
       }
     }).catch(() => {
-      Err.ApiError(res, 500, Err.ERRNO_INTERNAL_ERROR, Err.INTERNAL_ERROR);
+      ERR.ApiError(res, 500, ERR.ERRNO_INTERNAL_ERROR, ERR.INTERNAL_ERROR);
     });
   });
 
@@ -42,57 +39,57 @@ module.exports = function resource (endpoint, excludedFields, associations) {
         res.status(201).send(response.generate(instance, associations));
       }).catch(err => {
         switch (err.name) {
-          case Err.modelErrors[Err.VALIDATION_ERROR]:
-            Err.ApiError(res, 400, Err.ERRNO_VALIDATION_ERROR, Err.BAD_REQUEST,
+          case ERR.modelErrors[ERR.VALIDATION_ERROR]:
+            ERR.ApiError(res, 400, ERR.ERRNO_VALIDATION_ERROR, ERR.BAD_REQUEST,
                        JSON.stringify(err.errors));
             break;
           default:
-            Err.ApiError(res, 400, Err.ERRNO_BAD_REQUEST, Err.BAD_REQUEST,
+            ERR.ApiError(res, 400, ERR.ERRNO_BAD_REQUEST, ERR.BAD_REQUEST,
                        JSON.stringify(err.errors));
         }
       });
     }).catch(() => {
-      Err.ApiError(res, 500, Err.ERRNO_INTERNAL_ERROR, Err.INTERNAL_ERROR);
+      ERR.ApiError(res, 500, ERR.ERRNO_INTERNAL_ERROR, ERR.INTERNAL_ERROR);
     });
   });
 
   router.patch('', (req, res) => {
     const id = req.params && req.params[0];
     if (!id) {
-      return Err.ApiError(res, 404, Err.ERRNO_RESOURCE_NOT_FOUND,
-                          Err.NOT_FOUND);
+      return ERR.ApiError(res, 404, ERR.ERRNO_RESOURCE_NOT_FOUND,
+                          ERR.NOT_FOUND);
     }
 
     db().then(models => {
       Reflect.deleteProperty(req.body, 'id');
-      models.updateInstance(endpoint, id, req.body, excludedFields)
+      models.updateInstance(endpoint, id, req.body, exclude)
       .then(instance => {
         res.location('/' + endpoint + '(' + id + ')');
         res.status(200).json(response.generate(instance, associations));
       }).catch(err => {
         switch (err.name) {
-          case Err.modelErrors[Err.VALIDATION_ERROR]:
-            Err.ApiError(res, 400, Err.ERRNO_VALIDATION_ERROR, Err.BAD_REQUEST,
+          case ERR.modelErrors[ERR.VALIDATION_ERROR]:
+            ERR.ApiError(res, 400, ERR.ERRNO_VALIDATION_ERROR, ERR.BAD_REQUEST,
                        JSON.stringify(err.errors));
             break;
-          case Err.NOT_FOUND:
-            Err.ApiError(res, 404, Err.ERRNO_RESOURCE_NOT_FOUND, Err.NOT_FOUND,
+          case ERR.NOT_FOUND:
+            ERR.ApiError(res, 404, ERR.ERRNO_RESOURCE_NOT_FOUND, ERR.NOT_FOUND,
                        JSON.stringify(err.errors));
             break;
           default:
-            Err.ApiError(res, 400, Err.ERRNO_BAD_REQUEST, Err.BAD_REQUEST,
+            ERR.ApiError(res, 400, ERR.ERRNO_BAD_REQUEST, ERR.BAD_REQUEST,
                        JSON.stringify(err.errors));
         }
       });
     }).catch(() => {
-      Err.ApiError(res, 500, Err.ERRNO_INTERNAL_ERROR, Err.INTERNAL_ERROR);
+      ERR.ApiError(res, 500, ERR.ERRNO_INTERNAL_ERROR, ERR.INTERNAL_ERROR);
     });
   });
 
   router.delete('', (req, res) => {
     if (!req.params || !req.params[0]) {
-      return Err.ApiError(res, 404, Err.ERRNO_RESOURCE_NOT_FOUND,
-                          Err.NOT_FOUND);
+      return ERR.ApiError(res, 404, ERR.ERRNO_RESOURCE_NOT_FOUND,
+                          ERR.NOT_FOUND);
     }
 
     db().then(models => {
@@ -100,13 +97,13 @@ module.exports = function resource (endpoint, excludedFields, associations) {
         where: { id: req.params[0] }
       }).then(count => {
         if (!count) {
-          return Err.ApiError(res, 404, Err.ERRNO_RESOURCE_NOT_FOUND,
-                              Err.NOT_FOUND);
+          return ERR.ApiError(res, 404, ERR.ERRNO_RESOURCE_NOT_FOUND,
+                              ERR.NOT_FOUND);
         }
         res.status(204).send();
       });
     }).catch(() => {
-      Err.ApiError(res, 500, Err.ERRNO_INTERNAL_ERROR, Err.INTERNAL_ERROR);
+      ERR.ApiError(res, 500, ERR.ERRNO_INTERNAL_ERROR, ERR.INTERNAL_ERROR);
     });
   });
 
