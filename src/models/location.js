@@ -4,7 +4,7 @@
 
 'use strict';
 
-import { EncodingTypes } from './encoding_types';
+import { encodingTypes } from '../constants';
 
 /**
  * 8.2.2 Location
@@ -60,10 +60,10 @@ module.exports = (sequelize, DataTypes) => {
     name: { type: DataTypes.STRING(255), allowNull: false },
     description: { type: DataTypes.STRING(500), allowNull: false },
     encodingType: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING,
       allowNull: false,
       validate: {
-        isIn: [[ EncodingTypes.GEO_JSON.code ]]
+        isIn: [[ encodingTypes.GEO_JSON ]]
       }
     },
     location: { type: DataTypes.GEOMETRY('POINT', 4326), allowNull: false }

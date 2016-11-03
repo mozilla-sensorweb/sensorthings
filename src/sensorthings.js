@@ -23,7 +23,8 @@ module.exports = (config) => {
   router.use('/', baseRouter);
 
   resourceEndpoints.forEach(endpoint => {
-    router.use(route.generate(endpoint), require('./routes/' + Case.snake(endpoint)));
+    router.use(route.generate(endpoint),
+               require('./routes/' + Case.snake(endpoint)));
   });
 
   return router;

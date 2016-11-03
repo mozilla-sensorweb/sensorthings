@@ -4,7 +4,7 @@
 
 'use strict';
 
-import { EncodingTypes } from './encoding_types';
+import { encodingTypes } from '../constants';
 
 /**
  * 8.2.8 FeatureOfInterest Entity
@@ -50,12 +50,12 @@ module.exports = (sequelize, DataTypes) => {
     name: { type: DataTypes.STRING(255), allowNull: false },
     description: { type: DataTypes.STRING(500), allowNull: false },
     encodingType: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING,
       allowNull: false,
       validate: {
         isIn: [[
-          EncodingTypes.GEO_JSON.code,
-          EncodingTypes.LOCATION_TYPE.code
+          encodingTypes.GEO_JSON,
+          encodingTypes.LOCATION_TYPE
         ]]
       }
     },

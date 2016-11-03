@@ -1,23 +1,26 @@
 // errno
 const errnos = {
-  ERRNO_INTERNAL_ERROR: 500,
-  ERRNO_BAD_REQUEST: 400,
-  ERRNO_RESOURCE_NOT_FOUND: 404
+  ERRNO_INTERNAL_ERROR      : 500,
+  ERRNO_RESOURCE_NOT_FOUND  : 404,
+  ERRNO_BAD_REQUEST         : 400,
+  ERRNO_VALIDATION_ERROR    : 100
 };
 
 exports.errnos = errnos;
 
 // Error messages.
 const errors = {
-  INTERNAL_ERROR: 'Internal Server Error',
   BAD_REQUEST   : 'Bad Request',
-  NOT_FOUND     : 'Resource Not Found'
+  INTERNAL_ERROR: 'Internal Server Error',
+  NOT_FOUND     : 'Not Found'
 };
 
 exports.errors = errors;
 
 // Model errors.
-const modelErrors = {};
+const modelErrors = {
+  VALIDATION_ERROR: 'SequelizeValidationError'
+};
 exports.modelErrors = modelErrors;
 
 exports.ApiError = (res, code, errno, error, message) => {

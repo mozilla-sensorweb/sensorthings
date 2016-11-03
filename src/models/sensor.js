@@ -4,7 +4,7 @@
 
 'use strict';
 
-import { EncodingTypes } from './encoding_types';
+import { encodingTypes } from '../constants';
 
 /**
  * 8.2.1 Sensor Entity
@@ -41,12 +41,17 @@ module.exports = (sequelize, DataTypes) => {
     name: { type: DataTypes.STRING(255), allowNull: false },
     description: { type: DataTypes.STRING(500), allowNull: false },
     encodingType: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING,
       allowNull: false,
       validate: {
         isIn: [[
-          EncodingTypes.SENSOR_ML.code,
-          EncodingTypes.PDF.code
+          encodingTypes.SENSOR_ML,
+          encodingTypes.PDF,
+          // The spec at
+          // http://docs.opengeospatial.org/is/15-078r6/15-078r6.html#table_15
+          // does not include 'description' as a valid encoding type,
+          // but SensorUp and Gost recognized this one a valid encoding type.
+          encodingTypes.TYPE_DESCRIPTION
         ]]
       }
     },
@@ -54,7 +59,7 @@ module.exports = (sequelize, DataTypes) => {
   }, {
     classMethods: {
       associate: db => {
-        Sensor.hasMany(db.Datastreams);
+        Sensor.hasMany(db.Datastreams, { as: 'datastreams' });
       }
     }
   });

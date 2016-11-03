@@ -32,7 +32,8 @@ let router = express.Router();
  *    {
  *      "@iot.id": 1,
  *      "@iot.selfLink": "http://example.org/v1.0/Observations(1)",
- *      "FeatureOfInterest@iot.navigationLink": "Observations(1)/FeatureOfInterest",
+ *      "FeatureOfInterest@iot.navigationLink":
+ *        "Observations(1)/FeatureOfInterest",
  *      "Datastream@iot.navigationLink":"Observations(1)/Datastream",
  *      "phenomenonTime": "2014-12-31T11:59:59.00+08:00",
  *      "resultTime": "2014-12-31T11:59:59.00+08:00",

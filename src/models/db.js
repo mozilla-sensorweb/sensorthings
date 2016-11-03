@@ -58,7 +58,7 @@ module.exports = config => {
 
   fs.readdirSync(__dirname)
     .filter(file => {
-      return (file.indexOf('.js') !== 0) && (file !== 'encoding_types.js');
+      return (file.indexOf('.js') !== 0);
     })
     .forEach(file => {
       const model = sequelize.import(path.join(__dirname, file));
@@ -76,24 +76,22 @@ module.exports = config => {
 
   // Transaction method that updates an specific model instance and
   // returns the updated object
-  db.updateInstance = (model, instanceId, values, excludedFields) => {
-    return db.sequelize.transaction(t1 => {
+  db.updateInstance = (model, instanceId, values, exclude) => {
+    return db.sequelize.transaction(transaction => {
       return db[model].update(values, {
         where: { id: instanceId }
-      }, { transaction: t1 }).then(affected => {
+      }, { transaction }).then(affected => {
         const affectedRows = affected[0];
-        if (affectedRows === 1) {
-          return db[model].findById(instanceId, {
-            attributes: {
-              exclude: excludedFields
-            },
-            transaction: t1
-          });
+        if (affectedRows !== 1) {
+          const error = new Error(NOT_FOUND);
+          error.name = NOT_FOUND;
+          throw error;
         }
 
-        return new Promise((resolve, reject) => {
-          reject({ type: NOT_FOUND });
-        })
+        return db[model].findById(instanceId, {
+          attributes: { exclude },
+          transaction
+        });
       });
     });
   };
