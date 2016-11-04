@@ -18,7 +18,9 @@ const testConstants = Object.assign({}, Const, {
   point: {
     'type': 'Point',
     'coordinates': [-114.05, 51.05]
-  }
+  },
+  time: '2015-01-25T20:00:00.000Z',
+  anotherTime: '2015-02-25T20:00:00.000Z'
 });
 
 module.exports = Object.assign({}, testConstants, {
@@ -38,5 +40,8 @@ module.exports = Object.assign({}, testConstants, {
     description: testConstants.description,
     encodingType: testConstants.encodingTypes.GEO_JSON,
     location: Object.assign({}, testConstants.point)
+  },
+  historicalLocationEntity: {
+    time: testConstants.time
   }
 });

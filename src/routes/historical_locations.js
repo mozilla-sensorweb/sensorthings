@@ -1,6 +1,4 @@
-import express from 'express';
-
-let router = express.Router();
+import resource    from './resource';
 
 /**
  * Implementation of 8.3.3 "HistoricalLocation"
@@ -49,8 +47,7 @@ let router = express.Router();
  * }
  **/
 
-router.get('/', (req, res) => {
-  res.status(200).send();
-});
+const endpoint = 'HistoricalLocations';
+const excludedFields = ['createdAt', 'updatedAt', 'ThingId'];
 
-module.exports = router;
+module.exports = resource(endpoint, excludedFields);

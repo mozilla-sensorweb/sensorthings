@@ -29,7 +29,15 @@
 
 module.exports = (sequelize, DataTypes) => {
   const HistoricalLocation = sequelize.define('HistoricalLocations', {
-    time: { type: DataTypes.DATE, allowNull: false }
+    time: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      get: function get () {
+        const time = this.getDataValue('time');
+        const isoDate = new Date(time);
+        return isoDate.toISOString();
+      }
+    }
   }, {
     classMethods: {
       associate: db => {
