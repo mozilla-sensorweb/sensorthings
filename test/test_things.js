@@ -117,7 +117,7 @@ describe('Things API', () => {
         .end((err, res) => {
           should.not.exist(err);
           res.status.should.be.equal(201);
-          res.get('Location').should.match(/Things\/\d*$/)
+          res.get('Location').should.match(/Things\(\d*\)$/)
           done();
         });
     });
