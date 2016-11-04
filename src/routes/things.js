@@ -1,4 +1,8 @@
 import resource from './resource';
+import {
+  excludedFields,
+  things
+} from '../constants';
 
 /**
  * Implementation of 8.3.1 "Thing"
@@ -46,7 +50,6 @@ import resource from './resource';
  * }
  **/
 
-const endpoint = 'Things';
-const excludedFields = ['createdAt', 'updatedAt'];
+const endpoint = things;
 
 module.exports = resource(endpoint, excludedFields);

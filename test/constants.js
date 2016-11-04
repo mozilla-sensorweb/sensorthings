@@ -6,6 +6,7 @@ import * as Const from '../src/constants';
 
 const testConstants = Object.assign({}, Const, {
   anotherName: 'anotherName',
+  definition: 'definition',
   description: 'description',
   encodingTypes: Const.encodingTypes,
   metadata: 'http://example.org/TMP35_36_37.pdf',
@@ -24,16 +25,13 @@ const testConstants = Object.assign({}, Const, {
 });
 
 module.exports = Object.assign({}, testConstants, {
-  sensorEntity: {
-    name: testConstants.name,
-    description: testConstants.description,
-    encodingType: testConstants.encodingTypes.PDF,
-    metadata: testConstants.metadata
-  },
   datastreamEntity: {
     name: testConstants.name,
     description: testConstants.description,
     unitOfMeasurement: testConstants.unitOfMeasurement
+  },
+  historicalLocationEntity: {
+    time: testConstants.time
   },
   locationEntity: {
     name: testConstants.name,
@@ -41,7 +39,15 @@ module.exports = Object.assign({}, testConstants, {
     encodingType: testConstants.encodingTypes.GEO_JSON,
     location: Object.assign({}, testConstants.point)
   },
-  historicalLocationEntity: {
-    time: testConstants.time
+  observedPropertyEntity: {
+    name: testConstants.name,
+    definition: testConstants.definition,
+    description: testConstants.description
+  },
+  sensorEntity: {
+    name: testConstants.name,
+    description: testConstants.description,
+    encodingType: testConstants.encodingTypes.PDF,
+    metadata: testConstants.metadata
   }
 });

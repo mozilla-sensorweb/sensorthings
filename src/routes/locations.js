@@ -1,4 +1,8 @@
 import resource    from './resource';
+import {
+  excludedFields,
+  locations
+} from '../constants';
 
 /**
  * Implementation of 8.3.2 "Location"
@@ -45,7 +49,6 @@ import resource    from './resource';
  * }
  **/
 
-const endpoint = 'Locations';
-const excludedFields = ['createdAt', 'updatedAt'];
+const endpoint = locations;
 
 module.exports = resource(endpoint, excludedFields);

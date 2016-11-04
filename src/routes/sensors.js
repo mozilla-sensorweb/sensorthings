@@ -1,4 +1,9 @@
 import resource from './resource';
+import {
+  datastreams,
+  excludedFields,
+  sensors
+} from '../constants';
 
 /**
  * Implementation of 8.3.2 "Location"
@@ -42,9 +47,7 @@ import resource from './resource';
  * }
  **/
 
-
-const endpoint       = 'Sensors';
-const excludedFields = ['createdAt', 'updatedAt'];
-const associations   = ['Datastreams'];
+const endpoint = sensors;
+const associations   = [datastreams];
 
 module.exports = resource(endpoint, excludedFields, associations);
