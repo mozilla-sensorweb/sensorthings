@@ -5,40 +5,45 @@
 import * as Const from '../src/constants';
 
 const testConstants = Object.assign({}, Const, {
-  definition: 'definition',
-  name: 'name',
-  description: 'description',
-  encodingTypes: Const.encodingTypes,
-  metadata: 'http://example.org/TMP35_36_37.pdf',
-  unitOfMeasurement: {
-    'symbol': '%',
-    'name': 'Percentage',
-    'definition': 'http://www.qudt.org/qudt/owl/1.0.0/unit/Instances.html'
-  },
-  location: {
-    'type': 'Point',
-    'coordinates': [-114.05, 51.05]
-  },
   anotherlocation: {
     'type': 'Point',
     'coordinates': [114.05, 52.05]
   },
-  time: '2015-01-25T20:00:00.000Z',
   anothertime: '2015-02-25T20:00:00.000Z',
-  navigationLink: '@iot.navigationLink'
+  definition: 'definition',
+  description: 'description',
+  encodingTypes: Const.encodingTypes,
+  location: {
+    'type': 'Point',
+    'coordinates': [-114.05, 51.05]
+  },
+  metadata: 'http://example.org/TMP35_36_37.pdf',
+  name: 'name',
+  navigationLink: '@iot.navigationLink',
+  time: '2015-01-25T20:00:00.000Z',
+  unitOfMeasurement: {
+    'symbol': '%',
+    'name': 'Percentage',
+    'definition': 'http://www.qudt.org/qudt/owl/1.0.0/unit/Instances.html'
+  }
 });
 
 module.exports = Object.assign({}, testConstants, {
-  SensorsEntity: {
-    name: testConstants.name,
-    description: testConstants.description,
-    encodingType: testConstants.encodingTypes.PDF,
-    metadata: testConstants.metadata
-  },
   DatastreamsEntity: {
     name: testConstants.name,
     description: testConstants.description,
     unitOfMeasurement: testConstants.unitOfMeasurement
+  },
+  FeaturesOfInterestEntity: {
+    name: testConstants.name,
+    description: testConstants.description,
+    encodingType: testConstants.encodingTypes.GEO_JSON,
+    get feature () {
+      return Object.assign({}, testConstants.location);
+    }
+  },
+  HistoricalLocationsEntity: {
+    time: testConstants.time
   },
   LocationsEntity: {
     name: testConstants.name,
@@ -48,13 +53,21 @@ module.exports = Object.assign({}, testConstants, {
       return Object.assign({}, testConstants.location);
     }
   },
-  HistoricalLocationsEntity: {
-    time: testConstants.time
+  ObservationsEntity: {
+    phenomenonTime: testConstants.time,
+    result: {},
+    resultTime: testConstants.time
   },
   ObservedPropertiesEntity: {
     name: testConstants.name,
     definition: testConstants.definition,
     description: testConstants.description
+  },
+  SensorsEntity: {
+    name: testConstants.name,
+    description: testConstants.description,
+    encodingType: testConstants.encodingTypes.PDF,
+    metadata: testConstants.metadata
   },
   ThingsEntity: {
     name: testConstants.name,

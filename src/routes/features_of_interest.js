@@ -1,9 +1,12 @@
-import express from 'express';
-
-let router = express.Router();
+import resource from './resource';
+import {
+  excludedFields,
+  featuresOfInterest,
+  observations
+} from '../constants';
 
 /**
- * Implementation of 8.3.8 "FeaturesOfInterest"
+ * Implementation of 8.2.8 "FeaturesOfInterest"
  * The OGC SensorThings API follows the ITU-T definition, i.e., with regard
  * to the Internet of Things, a thing is an object of the physical world
  * (physical things) or the information world (virtual things) that is capable
@@ -45,8 +48,7 @@ let router = express.Router();
  * }
  **/
 
-router.get('/', (req, res) => {
-  res.status(200).send();
-});
+const endpoint = featuresOfInterest;
+const associations = [observations];
 
-module.exports = router;
+module.exports = resource(endpoint, excludedFields, associations);

@@ -24,7 +24,7 @@ module.exports = (endpoint, mandatory, optional = [], associations = []) => {
   let patchError, patchSuccess, postError, postSuccess;
 
   const anotherValue = function anotherValue (property) {
-    if (property === 'encodingType') {
+    if (['encodingType', 'feature'].indexOf(property) !== -1) {
       return testEntity[property];
     }
 
@@ -97,7 +97,7 @@ module.exports = (endpoint, mandatory, optional = [], associations = []) => {
         });
       });
 
-      it('should respond 200 with a /' + endpoint + ' list if no id provided',
+      it('should respond 200 with a ' + endpoint + ' list if no id provided',
          done => {
         server.get('/' + endpoint)
         .expect('Content-Type', /json/)
