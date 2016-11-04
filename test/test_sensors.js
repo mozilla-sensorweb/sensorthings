@@ -89,7 +89,7 @@ describe('Sensors API', () => {
           ]);
           value.name.should.be.equalOneOf([Const.name, Const.anotherName]);
           value.description.should.be.equal(Const.description);
-          value.encodingType.should.be.equal(Const.encodingType);
+          value.encodingType.should.be.equal(Const.encodingTypes.PDF);
           value.metadata.should.be.equal(Const.metadata);
           should.not.exist(value.createdAt);
           should.not.exist(value.updatedAt);
@@ -117,7 +117,7 @@ describe('Sensors API', () => {
               );
               res.body.name.should.be.equal(sensor.name);
               res.body.description.should.be.equal(Const.description);
-              res.body.encodingType.should.be.equal(Const.encodingType);
+              res.body.encodingType.should.be.equal(Const.encodingTypes.PDF);
               res.body.metadata.should.be.equal(Const.metadata);
               should.not.exist(res.body.createdAt);
               should.not.exist(res.body.updatedAt);
@@ -170,7 +170,7 @@ describe('Sensors API', () => {
         res.status.should.be.equal(201);
         res.body.name.should.be.equal(Const.name);
         res.body.description.should.be.equal(Const.description);
-        res.body.encodingType.should.be.equal(Const.encodingType);
+        res.body.encodingType.should.be.equal(Const.encodingTypes.PDF);
         res.body.metadata.should.be.equal(Const.metadata);
         res.body[Const.iotId].should.be.instanceOf(Number);
         res.body[Const.iotSelfLink].should.be
@@ -193,7 +193,7 @@ describe('Sensors API', () => {
             sensor.id.should.be.equal(res.body[Const.iotId]);
             sensor.name.should.be.equal(Const.name);
             sensor.description.should.be.equal(Const.description);
-            sensor.encodingType.should.be.equal(Const.encodingType);
+            sensor.encodingType.should.be.equal(Const.encodingTypes.PDF);
             sensor.metadata.should.be.equal(Const.metadata);
             done();
           });

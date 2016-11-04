@@ -7,13 +7,17 @@ import * as Const from '../src/constants';
 const testConstants = Object.assign({}, Const, {
   anotherName: 'anotherName',
   description: 'description',
-  encodingType: Const.encodingTypes.PDF,
+  encodingTypes: Const.encodingTypes,
   metadata: 'http://example.org/TMP35_36_37.pdf',
   name: 'name',
   unitOfMeasurement: {
-  'symbol': '%',
-  'name': 'Percentage',
-  'definition': 'http://www.qudt.org/qudt/owl/1.0.0/unit/Instances.html'
+    'symbol': '%',
+    'name': 'Percentage',
+    'definition': 'http://www.qudt.org/qudt/owl/1.0.0/unit/Instances.html'
+  },
+  point: {
+    'type': 'Point',
+    'coordinates': [-114.05, 51.05]
   }
 });
 
@@ -21,12 +25,18 @@ module.exports = Object.assign({}, testConstants, {
   sensorEntity: {
     name: testConstants.name,
     description: testConstants.description,
-    encodingType: testConstants.encodingType,
+    encodingType: testConstants.encodingTypes.PDF,
     metadata: testConstants.metadata
   },
   datastreamEntity: {
     name: testConstants.name,
     description: testConstants.description,
     unitOfMeasurement: testConstants.unitOfMeasurement
+  },
+  locationEntity: {
+    name: testConstants.name,
+    description: testConstants.description,
+    encodingType: testConstants.encodingTypes.GEO_JSON,
+    location: Object.assign({}, testConstants.point)
   }
 });
