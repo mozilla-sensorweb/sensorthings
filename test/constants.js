@@ -5,49 +5,64 @@
 import * as Const from '../src/constants';
 
 const testConstants = Object.assign({}, Const, {
-  anotherName: 'anotherName',
   definition: 'definition',
+  name: 'name',
   description: 'description',
   encodingTypes: Const.encodingTypes,
   metadata: 'http://example.org/TMP35_36_37.pdf',
-  name: 'name',
   unitOfMeasurement: {
     'symbol': '%',
     'name': 'Percentage',
     'definition': 'http://www.qudt.org/qudt/owl/1.0.0/unit/Instances.html'
   },
-  point: {
+  location: {
     'type': 'Point',
     'coordinates': [-114.05, 51.05]
   },
+  anotherlocation: {
+    'type': 'Point',
+    'coordinates': [114.05, 52.05]
+  },
   time: '2015-01-25T20:00:00.000Z',
-  anotherTime: '2015-02-25T20:00:00.000Z'
+  anothertime: '2015-02-25T20:00:00.000Z',
+  navigationLink: '@iot.navigationLink'
 });
 
 module.exports = Object.assign({}, testConstants, {
-  datastreamEntity: {
-    name: testConstants.name,
-    description: testConstants.description,
-    unitOfMeasurement: testConstants.unitOfMeasurement
-  },
-  historicalLocationEntity: {
-    time: testConstants.time
-  },
-  locationEntity: {
-    name: testConstants.name,
-    description: testConstants.description,
-    encodingType: testConstants.encodingTypes.GEO_JSON,
-    location: Object.assign({}, testConstants.point)
-  },
-  observedPropertyEntity: {
-    name: testConstants.name,
-    definition: testConstants.definition,
-    description: testConstants.description
-  },
-  sensorEntity: {
+  SensorsEntity: {
     name: testConstants.name,
     description: testConstants.description,
     encodingType: testConstants.encodingTypes.PDF,
     metadata: testConstants.metadata
+  },
+  DatastreamsEntity: {
+    name: testConstants.name,
+    description: testConstants.description,
+    unitOfMeasurement: testConstants.unitOfMeasurement
+  },
+  LocationsEntity: {
+    name: testConstants.name,
+    description: testConstants.description,
+    encodingType: testConstants.encodingTypes.GEO_JSON,
+    get location () {
+      return Object.assign({}, testConstants.location);
+    }
+  },
+  HistoricalLocationsEntity: {
+    time: testConstants.time
+  },
+  ObservedPropertiesEntity: {
+    name: testConstants.name,
+    definition: testConstants.definition,
+    description: testConstants.description
+  },
+  ThingsEntity: {
+    name: testConstants.name,
+    description: testConstants.description,
+    properties: {
+      property1: 'it’s waterproof',
+      property2: 'it glows in the dark',
+      property3: 'it repels insects'
+    }
   }
 });

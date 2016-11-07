@@ -59,7 +59,7 @@ module.exports = (sequelize, DataTypes) => {
   }, {
     classMethods: {
       associate: db => {
-        Sensor.hasMany(db.Datastreams, { as: 'datastreams' });
+        Sensor.hasMany(db.Datastreams);
       }
     }
   });
