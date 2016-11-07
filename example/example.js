@@ -1,7 +1,11 @@
+const bodyParser   = require('body-parser');
 const express      = require('express');
 const SensorThings = require('../dist/sensorthings');
 
 var app = express();
+
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 
 const config = {
   db: {

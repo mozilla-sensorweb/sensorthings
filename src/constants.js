@@ -4,20 +4,6 @@
 
 export const navigationLink = '@iot.navigationLink';
 
-export const createdAt      = 'createdAt';
-export const updatedAt      = 'updatedAt';
-export const excludedFields = [createdAt, updatedAt];
-
-export const encodingTypes = {
-  UNKNOWN: 'unknown',
-  GEO_JSON: 'application/vnd.geo+json',
-  PDF: 'application/pdf',
-  SENSOR_ML: 'http://www.opengis.net/doc/IS/SensorML/2.0',
-  TEXT_HTML: 'text/html',
-  LOCATION_TYPE: 'http://example.org/location_types#GeoJSON',
-  TYPE_DESCRIPTION: 'http://schema.org/description'
-};
-
 export const datastreams = 'Datastreams';
 export const datastreamsNavigationLink = datastreams + navigationLink;
 
@@ -45,8 +31,38 @@ export const sensorsNavigationLink = sensors + navigationLink;
 export const things = 'Things';
 export const thingsNavigationLink = things + navigationLink;
 
+export const entities = [
+  datastreams,
+  featuresOfInterest,
+  historicalLocations,
+  locations,
+  observations,
+  observedProperties,
+  sensors,
+  things
+];
+
+export const createdAt      = 'createdAt';
+export const updatedAt      = 'updatedAt';
+export const excludedFields = [createdAt, updatedAt];
+
+export const encodingTypes = {
+  UNKNOWN: 'unknown',
+  GEO_JSON: 'application/vnd.geo+json',
+  PDF: 'application/pdf',
+  SENSOR_ML: 'http://www.opengis.net/doc/IS/SensorML/2.0',
+  TEXT_HTML: 'text/html',
+  LOCATION_TYPE: 'http://example.org/location_types#GeoJSON',
+  TYPE_DESCRIPTION: 'http://schema.org/description'
+};
+
 export const thingId = 'ThingId';
 
 export const iotCount = '@iot.count';
 export const iotId = '@iot.id';
 export const iotSelfLink = '@iot.selfLink';
+
+export const hasMany = 'HasMany';
+export const hasOne = 'HasOne';
+export const belongsTo = 'BelongsTo';
+export const belongsToMany = 'BelongsToMany';

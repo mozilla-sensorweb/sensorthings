@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-import { resourceEndpoints }  from './routes/base';
+import { entities }  from './constants';
 
 /*
  * Module with utility shared methods
@@ -25,7 +25,7 @@ import { resourceEndpoints }  from './routes/base';
   */
 
   generate: endpoint => {
-    const possibleEndpoints = '(?:' + resourceEndpoints.join('|') + ')';
+    const possibleEndpoints = '(?:' + entities.join('|') + ')';
     const previousEndpoints = '^\\/(?:' + possibleEndpoints + '\\(\\d+\\)\\/)*';
     const finalEndpoint = endpoint ? endpoint : possibleEndpoints;
     const id = '(?:\\((\\d+)\\))?';

@@ -1,17 +1,6 @@
 import express from 'express';
 
-const resourceEndpoints = [
-  'Datastreams',
-  'FeaturesOfInterest',
-  'HistoricalLocations',
-  'Locations',
-  'Observations',
-  'ObservedProperties',
-  'Sensors',
-  'Things'
-];
-
-exports.resourceEndpoints = resourceEndpoints;
+import { entities } from '../constants';
 
 let router = express.Router();
 
@@ -59,7 +48,7 @@ let router = express.Router();
 router.get('/', (req, res) => {
   const prepath = req.protocol + '://' + req.hostname + req.baseUrl + '/';
 
-  const value = resourceEndpoints.map(key => {
+  const value = entities.map(key => {
     return {
       'name'  : key,
       'url'   : prepath + key
