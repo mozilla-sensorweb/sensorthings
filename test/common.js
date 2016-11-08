@@ -28,6 +28,10 @@ module.exports = (endpoint, mandatory, optional = [], associations = []) => {
       return testEntity[property];
     }
 
+    if (property.indexOf('Time') !== -1) {
+      property = 'time';
+    }
+
     return CONST['another' + property] || testEntity[property] + 'changed';
   }
 

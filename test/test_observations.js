@@ -1,18 +1,13 @@
-import app           from './server';
-import should        from 'should';
-import supertest     from 'supertest';
+import commonTests  from './common';
+import {
+  datastreams,
+  featuresOfInterest,
+  observations
+} from './constants';
 
-const server = supertest.agent(app);
+const mandatory     = ['phenomenonTime', 'result', 'resultTime'];
+// XXX #16 resultQuality
+const optional      = ['validTime', 'parameters'];
+const associations  = [datastreams, featuresOfInterest];
 
-describe('Observations API', () => {
-  it('should exist', done => {
-    server.get('/Observations')
-// XXX      .expect('Content-type', /json/)
-      .expect(200)
-      .end((err, res) => {
-        should.not.exist(err);
-        res.status.should.be.equal(200);
-        done();
-      });
-  });
-});
+commonTests(observations, mandatory, optional, associations);
