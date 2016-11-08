@@ -30,7 +30,10 @@ export const historicalLocationsNavigationLink =
   historicalLocations + navigationLink;
 
 export const locations = 'Locations';
-export const locationsNavitationLink = locations + navigationLink;
+export const locationsNavigationLink = locations + navigationLink;
+
+export const observations = 'Observations';
+export const observationsNavigationLink = observations + navigationLink;
 
 export const observedProperties = 'ObservedProperties';
 export const observedPropertiesNavigationLink =

@@ -4,7 +4,10 @@
 
 'use strict';
 
-import { encodingTypes } from '../constants';
+import {
+  encodingTypes,
+  featuresOfInterest
+} from '../constants';
 
 /**
  * 8.2.8 FeatureOfInterest Entity
@@ -46,7 +49,7 @@ import { encodingTypes } from '../constants';
  */
 
 module.exports = (sequelize, DataTypes) => {
-  const FeatureOfInterest = sequelize.define('FeaturesOfInterest', {
+  const FeatureOfInterest = sequelize.define(featuresOfInterest, {
     name: { type: DataTypes.STRING(255), allowNull: false },
     description: { type: DataTypes.STRING(500), allowNull: false },
     encodingType: {
@@ -67,6 +70,16 @@ module.exports = (sequelize, DataTypes) => {
     classMethods: {
       associate: db => {
         FeatureOfInterest.hasMany(db.Observations);
+      }
+    },
+    hooks: {
+      beforeValidate: (data) => {
+        if (data.feature) {
+          data.feature.crs = {
+            type: 'name',
+            properties: { name: 'EPSG:4326' }
+          };
+        }
       }
     }
   });

@@ -1,18 +1,27 @@
-import app           from './server';
-import should        from 'should';
-import supertest     from 'supertest';
+import commonTests  from './common';
+import * as CONST   from './constants';
 
-const server = supertest.agent(app);
+const mandatory     = ['name', 'description', 'encodingType', 'feature'];
+const optional      = [];
+const associations  = [CONST.observations];
 
-describe('FeaturesOfInterest API', () => {
-  it('should exist', done => {
-    server.get('/FeaturesOfInterest')
-// XXX      .expect('Content-type', /json/)
-      .expect(200)
-      .end((err, res) => {
-        should.not.exist(err);
-        res.status.should.be.equal(200);
-        done();
+const tester = commonTests(CONST.featuresOfInterest, mandatory, optional,
+                           associations);
+describe('FeaturesOfInterest API - specific', () => {
+  describe('Check invalid ecodingTypes', () => {
+
+    [CONST.encodingTypes.UNKNOWN,
+     CONST.encodingTypes.PDF,
+     CONST.encodingTypes.TEXT_HTML,
+     CONST.encodingTypes.SENSOR_ML,
+     CONST.encodingTypes.TYPE_DESCRIPTION].forEach(type => {
+      it('should respond 400 if encodingType is ' + type,
+        done => {
+        const body = Object.assign({}, CONST.FeaturesOfInterestEntity, {
+          encodingType: type,
+        });
+        tester.postError(done, body, 400);
       });
+    });
   });
 });
