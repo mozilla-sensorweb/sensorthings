@@ -2,8 +2,9 @@ import commonTests  from './common';
 import * as CONST   from './constants';
 
 const mandatory     = ['name', 'description', 'encodingType', 'location'];
-
-const tester = commonTests('Locations', mandatory);
+const optional      = [];
+const associations  = [CONST.things, CONST.historicalLocations];
+const tester = commonTests('Locations', mandatory, optional, associations);
 
 
 describe('Locations API - specific', () => {

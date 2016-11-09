@@ -1,7 +1,9 @@
 import resource    from './resource';
 import {
   excludedFields,
-  locations
+  historicalLocations,
+  locations,
+  things,
 } from '../constants';
 
 /**
@@ -50,5 +52,6 @@ import {
  **/
 
 const endpoint = locations;
+const associations   = [things, historicalLocations];
 
-module.exports = resource(endpoint, excludedFields);
+module.exports = resource(endpoint, excludedFields, associations);
