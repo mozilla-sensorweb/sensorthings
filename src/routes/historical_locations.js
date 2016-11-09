@@ -2,7 +2,9 @@ import resource    from './resource';
 import {
   excludedFields,
   historicalLocations,
-  thingId
+  locations,
+  thingId,
+  things
 } from '../constants';
 
 /**
@@ -54,5 +56,6 @@ import {
 
 const endpoint = historicalLocations;
 const exclude  = excludedFields.concat([thingId]);
+const associations = [things, locations];
 
-module.exports = resource(endpoint, exclude);
+module.exports = resource(endpoint, exclude, associations);
