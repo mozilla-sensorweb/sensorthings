@@ -4,11 +4,20 @@
 
 import * as Const from '../src/constants';
 
+const json = {
+  key: 'value'
+};
+const anotherjson = {
+  key: 'anothervalue'
+};
+
 const testConstants = Object.assign({}, Const, {
   anotherlocation: {
     'type': 'Point',
     'coordinates': [114.05, 52.05]
   },
+  anotherparameters: [anotherjson],
+  anotherresult: anotherjson,
   anothertime: '2015-02-25T20:00:00.000Z',
   definition: 'definition',
   description: 'description',
@@ -20,6 +29,8 @@ const testConstants = Object.assign({}, Const, {
   metadata: 'http://example.org/TMP35_36_37.pdf',
   name: 'name',
   navigationLink: '@iot.navigationLink',
+  parameters: [json],
+  result: json,
   time: '2015-01-25T20:00:00.000Z',
   unitOfMeasurement: {
     'symbol': '%',
@@ -55,8 +66,10 @@ module.exports = Object.assign({}, testConstants, {
   },
   ObservationsEntity: {
     phenomenonTime: testConstants.time,
-    result: {},
-    resultTime: testConstants.time
+    result: testConstants.result,
+    resultTime: testConstants.time,
+    validTime: testConstants.time,
+    parameters: testConstants.parameters
   },
   ObservedPropertiesEntity: {
     name: testConstants.name,

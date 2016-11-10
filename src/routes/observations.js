@@ -1,6 +1,10 @@
-import express from 'express';
-
-let router = express.Router();
+import resource from './resource';
+import {
+  datastreams,
+  excludedFields,
+  featuresOfInterest,
+  observations
+} from '../constants';
 
 /**
  * Implementation of 8.3.7 "Observation"
@@ -45,8 +49,7 @@ let router = express.Router();
  * }
  **/
 
-router.get('/', (req, res) => {
-  res.status(200).send();
-});
+const endpoint = observations;
+const associations = [datastreams, featuresOfInterest];
 
-module.exports = router;
+module.exports = resource(endpoint, excludedFields, associations);

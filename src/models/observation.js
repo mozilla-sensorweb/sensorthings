@@ -53,12 +53,53 @@
 
 module.exports = (sequelize, DataTypes) => {
   const Observation = sequelize.define('Observations', {
-    phenomenonTime: { type: DataTypes.DATE, allowNull: false },
+    phenomenonTime: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      get: function get() {
+        const time = this.getDataValue('phenomenonTime');
+        return new Date(time).toISOString();
+      },
+      set: function set(value) {
+        this.setDataValue('phenomenonTime', new Date(value).toISOString());
+      }
+    },
     result: { type: DataTypes.JSONB, allowNull: false },
-    resultTime: { type: DataTypes.DATE, allowNull: false },
+    resultTime: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      get: function get() {
+        const time = this.getDataValue('resultTime');
+        if (!time) {
+          return;
+        }
+        return new Date(time).toISOString();
+      },
+      set: function set(value) {
+        if (!value) {
+          return;
+        }
+        this.setDataValue('resultTime', new Date(value).toISOString());
+      }
+    },
     // XXX Define resultQuality property #16
     // resultQuality: {},
-    validTime: { type: DataTypes.DATE },
+    validTime: {
+      type: DataTypes.DATE,
+      get: function get() {
+        const time = this.getDataValue('validTime');
+        if (!time) {
+          return;
+        }
+        return new Date(time).toISOString();
+      },
+      set: function set(value) {
+        if (!value) {
+          return;
+        }
+        this.setDataValue('validTime', new Date(value).toISOString());
+      }
+    },
     parameters: { type: DataTypes.ARRAY(DataTypes.JSON) }
   }, {
     classMethods: {

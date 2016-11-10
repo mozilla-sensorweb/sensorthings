@@ -48,6 +48,6 @@ import {
  **/
 
 const endpoint = sensors;
-const associations   = [datastreams];
+const associations = [datastreams];
 
 module.exports = resource(endpoint, excludedFields, associations);
