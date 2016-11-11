@@ -1,3 +1,7 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
 import resource from './resource';
 import {
   datastreams,
@@ -6,7 +10,7 @@ import {
 } from '../constants';
 
 /**
- * Implementation of 8.3.2 "Location"
+ * Implementation of 8.2.5 "Sensor"
  * The OGC SensorThings API follows the ITU-T definition, i.e., with regard
  * to the Internet of Things, a thing is an object of the physical world
  * (physical things) or the information world (virtual things) that is capable

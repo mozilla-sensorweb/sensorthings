@@ -4,7 +4,8 @@ import response   from '../response';
 
 import * as ERR   from '../errors';
 
-module.exports = function resource (endpoint, exclude, associations) {
+module.exports = function resource(endpoint, exclude, associations) {
+
   let router = express.Router({ mergeParams: true });
 
   router.get('', (req, res) => {
