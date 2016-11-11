@@ -1,9 +1,6 @@
 import commonTests  from './common';
 import {
-  datastreams,
-  observedProperties,
-  sensors,
-  things
+  datastreams
 } from './constants';
 
 const mandatory     = [
@@ -13,6 +10,10 @@ const mandatory     = [
 // Issue #15 'observationType'
 ];
 const optional      = ['phenomenonTime', 'resultTime'];
-const associations  = [things, sensors, observedProperties];
+const associations  = {
+  'Things': 'Thing',
+  'Sensors': 'Sensor',
+  'ObservedProperties': 'ObservedProperty'
+};
 
 commonTests(datastreams, mandatory, optional, associations);

@@ -16,10 +16,13 @@ const ERRORS       = ERR.errors;
 / endpoint: String - Endpoint to test, i.e 'Sensors'
 / mandatory: Array - Mandatory fields we want to check, i.e ['name', 'time']
 / optional: Array - Optional (if any) fields we want to check, i.e ['meta']
-/ associations: Array - Associations (if any) of this model, i.e ['Locations']
+/ associationsMap: Object - Associations (if any) of this model, with the name
+/                           of the association as value. i.e [{Locations:
+/                           'Locations'}, {Datastreams: 'Datastream'}]
 */
 
-module.exports = (endpoint, mandatory, optional = [], associations = []) => {
+module.exports = (endpoint, mandatory, optional = [], associationsMap = {}) => {
+  const associatedModels = Object.keys(associationsMap);
   const testEntity = CONST[endpoint + 'Entity'];
   let patchError, patchSuccess, postError, postSuccess;
 
@@ -32,10 +35,6 @@ module.exports = (endpoint, mandatory, optional = [], associations = []) => {
       property = 'time';
     }
 
-    if (['observedArea'].indexOf(property) !== -1) {
-      property = 'location';
-    }
-
     return CONST['another' + property] || testEntity[property] + 'changed';
   }
 
@@ -45,7 +44,7 @@ module.exports = (endpoint, mandatory, optional = [], associations = []) => {
         db().then(models => {
           return Promise.all([
             models[endpoint].destroy({ where: {} })
-          ].concat(associations.map(name => {
+          ].concat(associatedModels.map(name => {
             return models[name].destroy({ where: {} });
           }))).then(() => done());
         });
@@ -75,13 +74,13 @@ module.exports = (endpoint, mandatory, optional = [], associations = []) => {
           models = _db;
           return Promise.all([
             models[endpoint].destroy({ where: {} })
-          ].concat(associations.map(name => {
+          ].concat(associatedModels.map(name => {
             return models[name].destroy({ where: {} });
           })));
         }).then(() => {
           const property = mandatory[0];
           const relations = {};
-          associations.forEach(modelName => {
+          associatedModels.forEach(modelName => {
             relations[modelName] = relations[modelName] || [];
             relations[modelName].push(CONST[modelName + 'Entity']);
           });
@@ -89,7 +88,7 @@ module.exports = (endpoint, mandatory, optional = [], associations = []) => {
           const instance = Object.assign({}, testEntity, relations);
           let anotherInstance = Object.assign({}, testEntity);
           const includes = {
-            include: associations.map(association => {
+            include: associatedModels.map(association => {
               return models[association];
             })
           };
@@ -127,7 +126,7 @@ module.exports = (endpoint, mandatory, optional = [], associations = []) => {
               selfLink2
             ]);
 
-            associations.forEach(name => {
+            associatedModels.forEach(name => {
               value[name + CONST.navigationLink].should.be.equalOneOf([
                 selfLink + '/' + name,
                 selfLink2 + '/' + name
@@ -169,7 +168,7 @@ module.exports = (endpoint, mandatory, optional = [], associations = []) => {
                 res.status.should.be.equal(200);
                 res.body[CONST.iotId].should.be.equal(instance.id);
                 res.body[CONST.iotSelfLink].should.be.equal(path);
-                associations.forEach(name => {
+                associatedModels.forEach(name => {
                   const navLink = name + CONST.navigationLink;
                   res.body[navLink].should.be.equal(path + '/' + name);
                 });
@@ -230,28 +229,30 @@ module.exports = (endpoint, mandatory, optional = [], associations = []) => {
           });
           res.body[CONST.iotId].should.be.instanceOf(Number);
           res.body[CONST.iotSelfLink].should.be.equal(path);
-          associations.forEach(name => {
+          associatedModels.forEach(name => {
             const navLink = name + CONST.navigationLink;
             res.body[navLink].should.be.equal(path + '/' + name);
           });
           res.header.location.should.be.equal(path);
           db().then(models => {
-            Promise.all(associations.map(name => {
-              return models[name].findAndCountAll();
-            }).concat([
-              models[endpoint].findAndCountAll()
-            ])).then(results => {
-              const primary = results.pop();
-              primary.count.should.be.equal(expected[0].count);
+            const expectedModels = Object.keys(expected);
+            Promise.all(expectedModels.map(name => {
+              return models[name].findAndCountAll().then((result) => {
+                const resultObject = {};
+                resultObject[name] = result;
+                return Promise.resolve(resultObject);
+              });
+            })).then(results => {
+              const primary = results[0][endpoint];
               const instance = primary.rows[0];
               instance.id.should.be.equal(res.body[CONST.iotId]);
               mandatory.forEach(property => {
                 instance[property].should.be.deepEqual(testEntity[property]);
               });
-
-              results.forEach((association, index) => {
+              Object.keys(results[0]).forEach((result) => {
                 // XXX associations.rows
-                association.count.should.be.equal(expected[index + 1].count);
+                const count = expected[result] ? expected[result].count : 0;
+                results[0][result].count.should.be.equal(count);
               });
               done();
             });
@@ -263,7 +264,7 @@ module.exports = (endpoint, mandatory, optional = [], associations = []) => {
         db().then(models => {
           return Promise.all([
             models[endpoint].destroy({ where: {} })
-          ].concat(associations.map(name => {
+          ].concat(associatedModels.map(name => {
             return models[name].destroy({ where: {} });
           }))).then(() => done());
         });
@@ -279,27 +280,27 @@ module.exports = (endpoint, mandatory, optional = [], associations = []) => {
       });
 
       it('should respond 201 if the ' + endpoint + ' is valid', done => {
-        let countObject = [];
-        countObject.push({ count: 1 });
-        associations.forEach(() => {
-          countObject.push({ count: 0 });
+        let countObject = {};
+        countObject[endpoint] = { count: 1 };
+        associatedModels.forEach((association) => {
+          countObject[association] = { count: 0 };
         });
         const body = Object.assign({}, testEntity);
         postSuccess(done, body, countObject);
       });
 
       describe('Relations linking', () => {
-        associations.forEach(name => {
-          xit('should respond 400 if request tries to create a ' +
+        associatedModels.forEach(name => {
+          it('should respond 400 if request tries to create a ' +
               endpoint + ' linked to an unexisting ' + name, done => {
             let body = Object.assign({}, testEntity);
-            body[name] = {
+            body[associationsMap[name]] = {
               '@iot.id': Date.now()
             };
             postError(done, body, 400);
           });
 
-          xit('should respond 201 if request to link ' + endpoint +
+          it('should respond 201 if request to link ' + endpoint +
               ' to existing ' + name + ' is valid', done => {
             db().then(models => {
               models[name].create(CONST[name + 'Entity']).then(relation => {
@@ -307,21 +308,22 @@ module.exports = (endpoint, mandatory, optional = [], associations = []) => {
                 body[name] = {
                   '@iot.id': relation.id
                 };
-                let countObject = [{ count: 1 }, { count: 0 }];
+                let countObject = {};
+                countObject[endpoint] = { count: 1 };
+                countObject[name] = { count: 1 };
                 postSuccess(done, body, countObject);
               });
             });
           });
 
-          xit('should respond 201 if request to create ' + endpoint +
+          it('should respond 201 if request to create ' + endpoint +
             ' with related ' + name + ' is valid', done => {
-            db().then(models => {
-              models[name].create(CONST[name + 'Entity']).then(relation => {
-                let body = Object.assign({}, testEntity);
-                body[name] = relation;
-                postSuccess(done, body, [{ count: 1 }, { count: 0 }]);
-              });
-            });
+            let body = Object.assign({}, testEntity);
+            body[name] = CONST[name + 'Entity'];
+            let countObject = {};
+            countObject[endpoint] = { count: 1 };
+            countObject[name] = { count: 1 };
+            postSuccess(done, body, countObject);
           });
         });
       });
@@ -383,7 +385,7 @@ module.exports = (endpoint, mandatory, optional = [], associations = []) => {
           model = models[endpoint];
           return Promise.all([
             models[endpoint].destroy({ where: {} })
-          ].concat(associations.map(name => {
+          ].concat(associatedModels.map(name => {
             return models[name].destroy({ where: {} });
           })));
         }).then(() => {
@@ -425,7 +427,7 @@ module.exports = (endpoint, mandatory, optional = [], associations = []) => {
       });
 
       describe('Relations linking', () => {
-        associations.forEach(name => {
+        associatedModels.forEach(name => {
           xit('should respond 400 if request tries to update a' + endpoint +
               ' to link it to an unexisting ' + name, done => {
             let body = Object.assign({}, testEntity);

@@ -3,7 +3,7 @@ import * as CONST   from './constants';
 
 const mandatory     = ['name', 'description', 'encodingType', 'feature'];
 const optional      = [];
-const associations  = [CONST.observations];
+const associations  = { 'Observations': 'Observations' };
 
 const tester = commonTests(CONST.featuresOfInterest, mandatory, optional,
                            associations);

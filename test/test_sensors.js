@@ -3,7 +3,7 @@ import * as CONST   from './constants';
 
 const mandatory     = ['name', 'description', 'encodingType'];
 const optional      = ['metadata'];
-const associations  = ['Datastreams'];
+const associations  = { 'Datastreams': 'Datastreams' };
 
 const tester = commonTests('Sensors', mandatory, optional, associations);
 
