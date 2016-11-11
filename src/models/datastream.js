@@ -75,8 +75,38 @@ module.exports = (sequelize, DataTypes) => {
     // XXX  Define observationType property #15
     // observationType: { type: DataTypes.INTEGER, allowNull: false },
     observedArea: { type: DataTypes.GEOMETRY('POINT', 4326) },
-    phenomenonTime: { type: DataTypes.DATE },
-    resultTime: { type: DataTypes.DATE }
+    phenomenonTime: {
+      type: DataTypes.DATE,
+      get: function get() {
+        const time = this.getDataValue('phenomenonTime');
+        if (!time) {
+          return;
+        }
+        return new Date(time).toISOString();
+      },
+      set: function set(value) {
+        if (!value) {
+          return;
+        }
+        this.setDataValue('phenomenonTime', new Date(value).toISOString());
+      }
+    },
+    resultTime: {
+      type: DataTypes.DATE,
+      get: function get() {
+        const time = this.getDataValue('resultTime');
+        if (!time) {
+          return;
+        }
+        return new Date(time).toISOString();
+      },
+      set: function set(value) {
+        if (!value) {
+          return;
+        }
+        this.setDataValue('resultTime', new Date(value).toISOString());
+      }
+    }
   }, {
     classMethods: {
       associate: db => {

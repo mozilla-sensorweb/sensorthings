@@ -5,7 +5,7 @@ import {
 } from '../constants';
 
 /**
- * Implementation of 8.3.1 "Thing"
+ * Implementation of 8.2.1 "Thing"
  * The OGC SensorThings API follows the ITU-T definition, i.e., with regard
  * to the Internet of Things, a thing is an object of the physical world
  * (physical things) or the information world (virtual things) that is capable

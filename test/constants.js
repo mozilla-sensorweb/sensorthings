@@ -19,6 +19,11 @@ const testConstants = Object.assign({}, Const, {
   anotherparameters: [anotherjson],
   anotherresult: anotherjson,
   anothertime: '2015-02-25T20:00:00.000Z',
+  anotherunitOfMeasurement: {
+    'name': 'degree Celsius',
+    'symbol': '°C',
+    'definition': 'http://unitsofmeasure.org/ucum.html#para-30'
+  },
   definition: 'definition',
   description: 'description',
   encodingTypes: Const.encodingTypes,
@@ -43,7 +48,9 @@ module.exports = Object.assign({}, testConstants, {
   DatastreamsEntity: {
     name: testConstants.name,
     description: testConstants.description,
-    unitOfMeasurement: testConstants.unitOfMeasurement
+    unitOfMeasurement: testConstants.unitOfMeasurement,
+    phenomenonTime: testConstants.time,
+    resultTime: testConstants.time
   },
   FeaturesOfInterestEntity: {
     name: testConstants.name,

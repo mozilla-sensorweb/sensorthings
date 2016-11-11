@@ -1,9 +1,18 @@
-import express from 'express';
-
-let router = express.Router();
+import resource from './resource';
+import {
+  datastreams,
+  excludedFields,
+  observations,
+  observedProperties,
+  observedPropertyId,
+  sensors,
+  sensorId,
+  things,
+  thingId
+} from '../constants';
 
 /**
- * Implementation of 8.3.4 "Datastreams"
+ * Implementation of 8.2.4 "Datastreams"
  * The OGC SensorThings API follows the ITU-T definition, i.e., with regard
  * to the Internet of Things, a thing is an object of the physical world
  * (physical things) or the information world (virtual things) that is capable
@@ -57,8 +66,8 @@ let router = express.Router();
  * }
  **/
 
-router.get('/', (req, res) => {
-  res.status(200).send();
-});
+const endpoint = datastreams;
+const associations = [things, sensors, observedProperties, observations];
+const exclude = excludedFields.concat([thingId, sensorId, observedPropertyId]);
 
-module.exports = router;
+module.exports = resource(endpoint, exclude, associations);
