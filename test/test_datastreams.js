@@ -1,18 +1,18 @@
-import app           from './server';
-import should        from 'should';
-import supertest     from 'supertest';
+import commonTests  from './common';
+import {
+  datastreams,
+  observedProperties,
+  sensors,
+  things
+} from './constants';
 
-const server = supertest.agent(app);
+const mandatory     = [
+  'name',
+  'description',
+  'unitOfMeasurement',
+// Issue #15 'observationType'
+];
+const optional      = ['phenomenonTime', 'resultTime'];
+const associations  = [things, sensors, observedProperties];
 
-describe('Datastreams API', () => {
-  it('should exist', done => {
-    server.get('/Datastreams')
-// XXX      .expect('Content-type', /json/)
-      .expect(200)
-      .end((err, res) => {
-        should.not.exist(err);
-        res.status.should.be.equal(200);
-        done();
-      });
-  });
-});
+commonTests(datastreams, mandatory, optional, associations);

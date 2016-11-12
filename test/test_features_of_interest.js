@@ -8,7 +8,7 @@ const associations  = [CONST.observations];
 const tester = commonTests(CONST.featuresOfInterest, mandatory, optional,
                            associations);
 describe('FeaturesOfInterest API - specific', () => {
-  describe('Check invalid ecodingTypes', () => {
+  describe('Check invalid encodingTypes', () => {
 
     [CONST.encodingTypes.UNKNOWN,
      CONST.encodingTypes.PDF,

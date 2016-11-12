@@ -32,6 +32,10 @@ module.exports = (endpoint, mandatory, optional = [], associations = []) => {
       property = 'time';
     }
 
+    if (['observedArea'].indexOf(property) !== -1) {
+      property = 'location';
+    }
+
     return CONST['another' + property] || testEntity[property] + 'changed';
   }
 

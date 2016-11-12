@@ -21,6 +21,7 @@ export const locationsNavigationLink = locations + navigationLink;
 export const observations = 'Observations';
 export const observationsNavigationLink = observations + navigationLink;
 
+export const observedProperty   = 'ObservedProperty';
 export const observedProperties = 'ObservedProperties';
 export const observedPropertiesNavigationLink =
   observedProperties + navigationLink;
@@ -57,6 +58,8 @@ export const encodingTypes = {
 };
 
 export const thingId = 'ThingId';
+export const sensorId = 'SensorId';
+export const observedPropertyId = 'ObservedPropertyId';
 
 export const iotCount = '@iot.count';
 export const iotId = '@iot.id';
