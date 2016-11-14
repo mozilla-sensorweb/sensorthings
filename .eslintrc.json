@@ -83,7 +83,7 @@
         "jsx-quotes": "error",
         "key-spacing": "off",
         "keyword-spacing": [
-            "error",
+            "off",
             {
                 "after": true,
                 "before": true
@@ -240,7 +240,7 @@
             "never"
         ],
         "space-infix-ops": "error",
-        "space-unary-ops": "error",
+        "space-unary-ops": "off",
         "spaced-comment": [
             "error",
             "always"
