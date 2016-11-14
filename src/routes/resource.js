@@ -3,8 +3,9 @@ import express    from 'express';
 import response   from '../response';
 
 import * as ERR   from '../errors';
+import * as CONST from '../constants';
 
-module.exports = function resource(endpoint, exclude, associations) {
+module.exports = function resource(endpoint, exclude, associations = []) {
 
   let router = express.Router({ mergeParams: true });
 
@@ -34,7 +35,7 @@ module.exports = function resource(endpoint, exclude, associations) {
 
   router.post('/', (req, res) => {
     db().then(models => {
-      models[endpoint].create(req.body).then(instance => {
+      createAssociations(models, req).then(instance => {
         // XXX #13 Response urls should be absolute
         res.location('/' + endpoint + '(' + instance.id + ')');
         res.status(201).send(response.generate(instance, associations));
@@ -107,6 +108,81 @@ module.exports = function resource(endpoint, exclude, associations) {
       ERR.ApiError(res, 500, ERR.ERRNO_INTERNAL_ERROR, ERR.INTERNAL_ERROR);
     });
   });
+
+  // Transaction method that links all the associated models in the body
+  // for an specific model. It returns a promise that resolves with the linked
+  // instance
+  const createAssociations = (models, req) => {
+    return models.sequelize.transaction(transaction => {
+      return models[endpoint].create(req.body, {
+        transaction
+      }).then(instance => {
+        // #62: Use the associations coming from the model in the whole
+        // router. We won't need to define it here then.
+        const relations = models[endpoint].associations;
+        if (Object.keys(relations).length <= 0) {
+          // Nothing to link
+          return Promise.resolve(instance);
+        }
+
+        let promises = [];
+        Object.keys(relations).forEach(associationName => {
+          const body = req.body[associationName];
+          if (!body) {
+            return;
+          }
+
+          const pluralName = relations[associationName].options.name.plural;
+          const model = models[associationName] || models[pluralName];
+          const association = relations[associationName];
+          const link = createAssociation(instance, model, association, body,
+                                         transaction);
+          promises.push(link);
+        });
+
+        return Promise.all(promises).then(() => instance);
+      });
+    });
+  };
+
+  // Finds or creates an specific entity, and associates it to the given
+  // instance.
+  const createAssociation = (instance, model, association, entity,
+                             transaction) => {
+    const singularName = model.options.name.singular;
+    const id = entity[CONST.iotId];
+    const attributes = Object.keys(entity);
+
+    if (attributes.length > 1) {
+      // According to section 10.2.1.2, if any parameter other than '@iot.id' is
+      // sent in a linked entity (even if it also includes @iot.id), we need to
+      // create a new instance of the associated entity.
+      Reflect.deleteProperty(entity, 'id');
+      return instance['create' + singularName](entity, { transaction });
+    }
+
+    // According to section 10.2.1.1, if the only parameter of a linked entity
+    // in the body is '@iot.id', we need to associate that instance to the one
+    // that is being created.
+    return model.findById(id, { transaction }).then(found => {
+      if (!found) {
+        return Promise.reject({
+          name: ERR.modelErrors[ERR.VALIDATION_ERROR]
+        });
+      }
+      switch (association.associationType) {
+        case CONST.hasMany:
+        case CONST.belongsToMany:
+          // XXX Issue #61 Allow arrays on hasMany, belongsToMany associations
+          return instance['add' + singularName](found, { transaction });
+        case CONST.hasOne:
+        case CONST.belongsTo:
+          return instance['set' + singularName](found, { transaction });
+        default:
+          return Promise.reject({ name: ERR.INTERNAL_ERROR });
+      }
+    });
+  }
 
   return router;
 };
