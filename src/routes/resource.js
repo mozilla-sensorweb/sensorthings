@@ -127,17 +127,32 @@ module.exports = function resource(endpoint, exclude, associations = []) {
 
         let promises = [];
         Object.keys(relations).forEach(associationName => {
+          const association = relations[associationName];
           const body = req.body[associationName];
           if (!body) {
             return;
           }
 
-          const pluralName = relations[associationName].options.name.plural;
+          const isList = Array.isArray(body);
+          const isMultipleAssociation = (type) => {
+            return [CONST.hasMany, CONST.belongsToMany].indexOf(type) > -1;
+          }
+
+          if (isList && !isMultipleAssociation(association.associationType)) {
+            return promises.push(Promise.reject({
+              name: ERR.modelErrors[ERR.VALIDATION_ERROR]
+            }));
+          }
+
+          const relatedEntities = isList ? body : [body];
+          const pluralName = association.options.name.plural;
           const model = models[associationName] || models[pluralName];
-          const association = relations[associationName];
-          const link = createAssociation(instance, model, association, body,
+
+          relatedEntities.forEach(entity => {
+            const link = createAssociation(instance, model, association, entity,
                                          transaction);
-          promises.push(link);
+            promises.push(link);
+          });
         });
 
         return Promise.all(promises).then(() => instance);
