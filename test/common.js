@@ -26,7 +26,7 @@ module.exports = (endpoint, mandatory, optional = [], associationsMap = {}) => {
   const testEntity = CONST[endpoint + 'Entity'];
   let patchError, patchSuccess, postError, postSuccess;
 
-  const anotherValue = function anotherValue (property) {
+  const anotherValue = function anotherValue(property) {
     if (['encodingType', 'feature'].indexOf(property) !== -1) {
       return testEntity[property];
     }
@@ -36,6 +36,11 @@ module.exports = (endpoint, mandatory, optional = [], associationsMap = {}) => {
     }
 
     return CONST['another' + property] || testEntity[property] + 'changed';
+  }
+
+  const isMultipleAssociation = function isMultipleAssociation(type) {
+    const multiples = [CONST.hasMany, CONST.belongsToMany];
+    return multiples.indexOf(type) > -1;
   }
 
   describe('/' + endpoint + ' API', () => {
@@ -301,11 +306,11 @@ module.exports = (endpoint, mandatory, optional = [], associationsMap = {}) => {
           });
 
           it('should respond 201 if request to link ' + endpoint +
-              ' to existing ' + name + ' is valid', done => {
+             ' to existing ' + name + ' is valid', done => {
             db().then(models => {
               models[name].create(CONST[name + 'Entity']).then(relation => {
                 let body = Object.assign({}, testEntity);
-                body[name] = {
+                body[associationsMap[name]] = {
                   '@iot.id': relation.id
                 };
                 let countObject = {};
@@ -317,13 +322,106 @@ module.exports = (endpoint, mandatory, optional = [], associationsMap = {}) => {
           });
 
           it('should respond 201 if request to create ' + endpoint +
-            ' with related ' + name + ' is valid', done => {
+             ' with related ' + name + ' is valid', done => {
             let body = Object.assign({}, testEntity);
-            body[name] = CONST[name + 'Entity'];
+            body[associationsMap[name]] = CONST[name + 'Entity'];
             let countObject = {};
             countObject[endpoint] = { count: 1 };
             countObject[name] = { count: 1 };
             postSuccess(done, body, countObject);
+          });
+
+          it('should respond 201 linking an array of ids in a hasMany/' +
+             'belongsToMany association', done => {
+            db().then(models => {
+              const associations = models[endpoint].associations;
+              const association = associations[associationsMap[name]];
+              const type = association.associationType;
+              if (!isMultipleAssociation(type)) {
+                return done();
+              }
+
+              let body = Object.assign({}, testEntity);
+              body[associationsMap[name]] = [];
+              Promise.all([
+                models[name].create(CONST[name + 'Entity']),
+                models[name].create(CONST[name + 'Entity'])
+              ]).then((created) => {
+                created.forEach(row => {
+                  body[associationsMap[name]].push({ '@iot.id': row.id });
+                });
+                let countObject = {};
+                countObject[endpoint] = { count: 1 };
+                countObject[name] = { count: created.length };
+                postSuccess(done, body, countObject);
+              });
+            });
+          });
+
+          it('should respond 201 linking an array of entities in a hasMany/' +
+             'belongsToMany association', done => {
+            db().then(models => {
+              const associations = models[endpoint].associations;
+              const association = associations[associationsMap[name]];
+              const type = association.associationType;
+              if (!isMultipleAssociation(type)) {
+                return done();
+              }
+
+              let body = Object.assign({}, testEntity);
+              body[associationsMap[name]] = [];
+              body[associationsMap[name]].push(CONST[name + 'Entity']);
+              body[associationsMap[name]].push(CONST[name + 'Entity']);
+              let countObject = {};
+              countObject[endpoint] = { count: 1 };
+              countObject[name] = { count: body[associationsMap[name]].length };
+              postSuccess(done, body, countObject);
+            });
+          });
+
+          it('should respond 400 if one of the ids in a linked array does not' +
+             ' exist', done => {
+            db().then(models => {
+              const associations = models[endpoint].associations;
+              const association = associations[associationsMap[name]];
+              const type = association.associationType;
+              if (!isMultipleAssociation(type)) {
+                return done();
+              }
+
+              let body = Object.assign({}, testEntity);
+              body[associationsMap[name]] = [];
+              models[name].create(CONST[name + 'Entity']).then((created) => {
+                body[associationsMap[name]] = [
+                  { '@iot.id': created.id },
+                  { '@iot.id':  Date.now() }
+                ];
+                postError(done, body, 400);
+              });
+            });
+          });
+
+          it('should respond 400 linking an array in a hasOne/belongsTo' +
+             ' association', done => {
+            db().then(models => {
+              const associations = models[endpoint].associations;
+              const association = associations[associationsMap[name]];
+              const type = association.associationType;
+              if (isMultipleAssociation(type)) {
+                return done();
+              }
+              let body = Object.assign({}, testEntity);
+              body[associationsMap[name]] = [];
+              Promise.all([
+                models[name].create(CONST[name + 'Entity']),
+                models[name].create(CONST[name + 'Entity'])
+              ]).then((created) => {
+                created.forEach(row => {
+                  body[associationsMap[name]].push({ '@iot.id': row.id });
+                });
+                postError(done, body, 400);
+              });
+            });
           });
         });
       });
@@ -398,7 +496,7 @@ module.exports = (endpoint, mandatory, optional = [], associationsMap = {}) => {
       });
 
       it('should respond 404 if request tries to update ' +
-          'a ' + endpoint + ' that does not exist', done => {
+         'a ' + endpoint + ' that does not exist', done => {
         instanceId = 0;
         const entity = Object.assign({}, testEntity);
         patchError(done, entity, 404, ERR.ERRNO_RESOURCE_NOT_FOUND,
@@ -406,13 +504,13 @@ module.exports = (endpoint, mandatory, optional = [], associationsMap = {}) => {
       });
 
       it('should respond 200 if request to update a ' +
-          'single property of a ' + endpoint + ' is valid', done => {
+         'single property of a ' + endpoint + ' is valid', done => {
         const entity = Object.assign({}, testEntity);
         patchSuccess(done, entity);
       });
 
       it('should respond 200 if request to update all ' +
-          'the properties of a ' + endpoint + ' is valid', done => {
+         'the properties of a ' + endpoint + ' is valid', done => {
         let body = {};
         mandatory.forEach(field => {
           body[field] = anotherValue(field);
@@ -503,7 +601,7 @@ module.exports = (endpoint, mandatory, optional = [], associationsMap = {}) => {
       });
 
       it('should respond 404 if request tries to delete a ' + endpoint +
-          ' that does not exist', done => {
+         ' that does not exist', done => {
         instanceId = 0;
         deleteError(done);
       });
