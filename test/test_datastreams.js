@@ -13,7 +13,8 @@ const optional      = ['phenomenonTime', 'resultTime'];
 const associations  = {
   'Things': 'Thing',
   'Sensors': 'Sensor',
-  'ObservedProperties': 'ObservedProperty'
+  'ObservedProperties': 'ObservedProperty',
+  'Observations': 'Observations'
 };
 
 commonTests(datastreams, mandatory, optional, associations);
