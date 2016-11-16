@@ -733,6 +733,59 @@ module.exports = (endpoint, mandatory, optional = [], associationsMap = {}) => {
         done => {
         deleteSuccess(done);
       });
+
+      describe('Integrity constraints', () => {
+        const linkedModel = CONST.integrityConstraints[endpoint];
+        if (!linkedModel) {
+          return;
+        }
+
+        beforeEach(done => {
+          db().then(models => {
+            Promise.all([
+              models[linkedModel].destroy({ where: {} }),
+              models[endpoint].destroy({ where: {} })
+            ]).then(() => {
+              done();
+            });
+          });
+        });
+
+        // XXX Issue 70 Enforce integrity constraints when deleting an entity
+        xit('should delete all ' + linkedModel + ' entities linked to the ' +
+           endpoint + ' entity being deleted', done => {
+          let model;
+          db().then(models => {
+            model = models[linkedModel];
+            return model.create(
+              Object.assign({}, CONST[linkedModel + 'Entity'])
+            );
+          }).then(instance => {
+            return new Promise(resolve => {
+              const body = Object.assign({}, body, testEntity);
+              body[associationsMap[linkedModel]] = {
+                '@iot.id': instance.id
+              };
+              server.post('/' + endpoint).send(body)
+              .expect(201)
+              .end((err, res) => {
+                should.not.exist(err);
+                resolve(res.body[CONST.iotId]);
+              });
+            });
+          }).then(id => {
+            server.delete('/' + endpoint + '(' + id + ')').send()
+            .expect(204)
+            .end((err) => {
+              should.not.exist(err);
+              model.findAndCountAll().then(result => {
+                result.count.should.be.equal(0);
+                done();
+              });
+            });
+          });
+        });
+      });
     });
   });
 
