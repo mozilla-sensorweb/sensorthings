@@ -1,5 +1,9 @@
 import commonTests  from './common';
 import * as CONST   from './constants';
+import {
+  BAD_REQUEST,
+  ERRNO_VALIDATION_ERROR
+} from '../src/errors';
 
 const mandatory     = ['name', 'description', 'encodingType'];
 const optional      = ['metadata'];
@@ -19,7 +23,7 @@ describe('Sensors API - specific', () => {
         const body = Object.assign({}, CONST.SensorsEntity, {
           encodingType: type,
         });
-        tester.postError(done, body, 400);
+        tester.postError(done, body, 400, ERRNO_VALIDATION_ERROR, BAD_REQUEST);
       });
     });
   });

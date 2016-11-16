@@ -43,6 +43,14 @@ module.exports = (endpoint, mandatory, optional = [], associationsMap = {}) => {
     return multiples.indexOf(type) > -1;
   }
 
+  const getPlural = function getPlural(entity) {
+    let name = entity.$modelOptions.name.plural;
+    if (name === 'FeaturesOfInterests') {
+      return entity.$modelOptions.name.singular;
+    }
+    return name;
+  }
+
   describe('/' + endpoint + ' API', () => {
     describe('Preconditions', () => {
       beforeEach(done => {
@@ -207,7 +215,7 @@ module.exports = (endpoint, mandatory, optional = [], associationsMap = {}) => {
     describe('POST /' + endpoint, () => {
       const resource = '/' + endpoint;
 
-      postError = (done, body, code) => {
+      postError = (done, body, code, errno, error) => {
         server.post(resource).send(body)
         .expect('Content-Type', /json/)
         .expect(code)
@@ -215,8 +223,8 @@ module.exports = (endpoint, mandatory, optional = [], associationsMap = {}) => {
           should.not.exist(err);
           res.status.should.be.equal(code);
           res.body.code.should.be.equal(code);
-          res.body.errno.should.be.equal(ERRNOS[ERR.ERRNO_VALIDATION_ERROR]);
-          res.body.error.should.be.equal(ERRORS[ERR.BAD_REQUEST]);
+          res.body.errno.should.be.equal(ERRNOS[errno]);
+          res.body.error.should.be.equal(ERRORS[error]);
           done();
         });
       };
@@ -280,7 +288,8 @@ module.exports = (endpoint, mandatory, optional = [], associationsMap = {}) => {
            ' property', done => {
           let body = Object.assign({}, testEntity);
           Reflect.deleteProperty(body, property);
-          postError(done, body, 400);
+          postError(done, body, 400, ERR.ERRNO_VALIDATION_ERROR,
+                    ERR.BAD_REQUEST);
         });
       });
 
@@ -302,7 +311,8 @@ module.exports = (endpoint, mandatory, optional = [], associationsMap = {}) => {
             body[associationsMap[name]] = {
               '@iot.id': Date.now()
             };
-            postError(done, body, 400);
+            postError(done, body, 400, ERR.ERRNO_INVALID_ASSOCIATION,
+                      ERR.BAD_REQUEST);
           });
 
           it('should respond 201 if request to link ' + endpoint +
@@ -396,7 +406,8 @@ module.exports = (endpoint, mandatory, optional = [], associationsMap = {}) => {
                   { '@iot.id': created.id },
                   { '@iot.id':  Date.now() }
                 ];
-                postError(done, body, 400);
+                postError(done, body, 400, ERR.ERRNO_INVALID_ASSOCIATION,
+                          ERR.BAD_REQUEST);
               });
             });
           });
@@ -419,7 +430,8 @@ module.exports = (endpoint, mandatory, optional = [], associationsMap = {}) => {
                 created.forEach(row => {
                   body[associationsMap[name]].push({ '@iot.id': row.id });
                 });
-                postError(done, body, 400);
+                postError(done, body, 400, ERR.ERRNO_INVALID_ASSOCIATION,
+                          ERR.BAD_REQUEST);
               });
             });
           });
@@ -447,7 +459,7 @@ module.exports = (endpoint, mandatory, optional = [], associationsMap = {}) => {
         });
       };
 
-      patchSuccess = (done, body, expected) => {
+      patchSuccess = (done, body, expected, associations) => {
         expected = expected || Object.assign({}, body, testEntity);
         server.patch(resource()).send(body)
         .expect('Content-Type', /json/)
@@ -463,12 +475,38 @@ module.exports = (endpoint, mandatory, optional = [], associationsMap = {}) => {
           res.header.location.should.be.equal('/' + endpoint + '(' +
                                               res.body[CONST.iotId] + ')');
           db().then(models => {
-            models[endpoint].findAndCountAll().then(result => {
+            return models[endpoint].findAndCountAll().then(result => {
               result.count.should.be.equal(1);
               const value = result.rows[0];
               value.id.should.be.equal(instanceId);
               mandatory.concat(optional).forEach(property => {
                 value[property].should.be.deepEqual(expected[property]);
+              });
+              return {
+                models,
+                entity: value
+              }
+            });
+          }).then(result => {
+            if (!associations) {
+              return done();
+            }
+            let promises = [];
+            associations.forEach(association => {
+              const { type, name, id } = association;
+              const entity = result.entity;
+              const associationName = name.singular;
+              let promise;
+              if (isMultipleAssociation(type)) {
+                promise = entity['has' + associationName](id);
+              } else {
+                promise = entity['get' + associationName]();
+              }
+              promises.push(promise);
+            });
+            Promise.all(promises).then(results => {
+              results.forEach(value => {
+                value.should.not.be.equal(null);
               });
               done();
             });
@@ -525,21 +563,106 @@ module.exports = (endpoint, mandatory, optional = [], associationsMap = {}) => {
       });
 
       describe('Relations linking', () => {
+        let testEntities = {};
+
+        beforeEach(done => {
+          db().then(models => {
+            let promises = [];
+            associatedModels.forEach(name => {
+              const entity = Object.assign({}, CONST[name + 'Entity']);
+              promises.push(models[name].create(entity));
+            });
+            Promise.all(promises).then(results => {
+              results.forEach(result => {
+                testEntities[getPlural(result)] = result.id
+              });
+              done()
+            });
+          });
+        });
+
         associatedModels.forEach(name => {
-          xit('should respond 400 if request tries to update a' + endpoint +
-              ' to link it to an unexisting ' + name, done => {
+          it('should respond 400 if request tries to update a ' + endpoint +
+             ' to link it to an unexisting ' + name, done => {
             let body = Object.assign({}, testEntity);
-            body[name] = {
-              '@iot.id': Date.now()
+            body[associationsMap[name]] = {
+              '@iot.id': '0'
             };
-            patchError(done, body, 400);
+            patchError(done, body, 400, ERR.ERRNO_INVALID_ASSOCIATION,
+                       ERR.BAD_REQUEST);
           });
 
-          xit('should respond 400 if request includes related ' +
-              'entities as inline content', done => {
+          it('should respond 400 if request includes related ' +
+             'entities as inline content', done => {
             let body = Object.assign({}, testEntity);
-            body[name] = CONST[name + 'Entity'];
-            patchError(done, body, 400);
+            body[associationsMap[name]] = CONST[name + 'Entity'];
+            patchError(done, body, 400, ERR.ERRNO_INLINE_CONTENT_NOT_ALLOWED,
+                       ERR.BAD_REQUEST);
+          });
+
+          it('should respond 200 if request to update a ' + endpoint +
+             ' to link it to an existing ' + name + ' is correct', done => {
+            db().then(models => {
+              const associations = models[endpoint].associations;
+              const association = associations[associationsMap[name]];
+              let body = Object.assign({}, testEntity);
+              body[associationsMap[name]] = {
+                '@iot.id': testEntities[name]
+              };
+              patchSuccess(done, body, body, [{
+                type: association.associationType,
+                name: association.target.options.name,
+                id: testEntities[name]
+              }]);
+            });
+          });
+
+          it('should respond 200 if request to update a ' + endpoint +
+             ' to link it to several existing ' + name + ' is correct',
+            done => {
+            db().then(models => {
+              const associations = models[endpoint].associations;
+              const association = associations[associationsMap[name]];
+              const type = association.associationType;
+              if (!isMultipleAssociation(type)) {
+                return done();
+              }
+              let body = Object.assign({}, testEntity);
+              body[associationsMap[name]] = [{
+                '@iot.id': testEntities[name]
+              }, {
+                '@iot.id': testEntities[name]
+              }];
+              patchSuccess(done, body, body, [{
+                type: association.associationType,
+                name: association.target.options.name,
+                id: testEntities[name]
+              }, {
+                type: association.associationType,
+                name: association.target.options.name,
+                id: testEntities[name]
+              }]);
+            });
+          });
+
+          it('should respond 400 to a request to update a ' + endpoint +
+             ' to link it to several existing ' + name, done => {
+            db().then(models => {
+              const associations = models[endpoint].associations;
+              const association = associations[associationsMap[name]];
+              const type = association.associationType;
+              if (isMultipleAssociation(type)) {
+                return done();
+              }
+              let body = Object.assign({}, testEntity);
+              body[associationsMap[name]] = [{
+                '@iot.id': testEntities[name]
+              }, {
+                '@iot.id': testEntities[name]
+              }];
+              patchError(done, body, 400, ERR.ERRNO_INVALID_ASSOCIATION,
+                         ERR.BAD_REQUEST);
+            });
           });
         })
       })
