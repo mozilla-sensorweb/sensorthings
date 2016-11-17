@@ -10,11 +10,5 @@ const mandatory     = [
 // Issue #15 'observationType'
 ];
 const optional      = ['phenomenonTime', 'resultTime'];
-const associations  = {
-  'Things': 'Thing',
-  'Sensors': 'Sensor',
-  'ObservedProperties': 'ObservedProperty',
-  'Observations': 'Observations'
-};
 
-commonTests(datastreams, mandatory, optional, associations);
+commonTests(datastreams, mandatory, optional);
