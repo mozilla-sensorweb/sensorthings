@@ -1,8 +1,10 @@
 import resource from './resource';
 import {
   datastreams,
+  datastreamId,
   excludedFields,
   featuresOfInterest,
+  featuresOfInterestId,
   observations
 } from '../constants';
 
@@ -51,5 +53,6 @@ import {
 
 const endpoint = observations;
 const associations = [datastreams, featuresOfInterest];
+const exclude = excludedFields.concat([featuresOfInterestId, datastreamId]);
 
-module.exports = resource(endpoint, excludedFields, associations);
+module.exports = resource(endpoint, exclude, associations);
