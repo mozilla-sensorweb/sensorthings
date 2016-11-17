@@ -46,7 +46,8 @@ let router = express.Router();
  **/
 
 router.get('/', (req, res) => {
-  const prepath = req.protocol + '://' + req.hostname + req.baseUrl + '/';
+  const prepath = req.protocol + '://' + req.hostname + ':' +
+                  req.socket.localPort + req.baseUrl + '/';
 
   const value = entities.map(key => {
     return {

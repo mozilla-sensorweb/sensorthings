@@ -19,7 +19,4 @@ const config = {
 
 app.use('/', SensorThings(config));
 
-const port = 8080;
-app.listen(port);
-
 exports = module.exports = app;

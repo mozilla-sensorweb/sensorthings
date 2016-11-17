@@ -6,10 +6,6 @@ import supertest     from 'supertest';
 import * as CONST from './constants';
 import * as ERR from '../src/errors';
 
-const server       = supertest.agent(app);
-const ERRNOS       = ERR.errnos;
-const ERRORS       = ERR.errors;
-
 /*
 / Utility method that encapsulates the common tests we are running on each
 / endpoint. Parameters:
@@ -22,8 +18,13 @@ const ERRORS       = ERR.errors;
 */
 
 module.exports = (endpoint, mandatory, optional = [], associationsMap = {}) => {
+  const server           = supertest.agent(app);
+  const ERRNOS           = ERR.errnos;
+  const ERRORS           = ERR.errors;
+  const prepath          = '/v1.0/';
   const associatedModels = Object.keys(associationsMap);
-  const testEntity = CONST[endpoint + 'Entity'];
+  const testEntity       = CONST[endpoint + 'Entity'];
+
   let patchError, patchSuccess, postError, postSuccess;
 
   const anotherValue = function anotherValue(property) {
@@ -64,7 +65,7 @@ module.exports = (endpoint, mandatory, optional = [], associationsMap = {}) => {
       });
 
       it('/' + endpoint + ' endpoint should exist and be empty', done => {
-        server.get('/' + endpoint)
+        server.get(prepath + endpoint)
         .expect('Content-Type', /json/)
         .expect(200)
         .end((err, res) => {
@@ -119,7 +120,7 @@ module.exports = (endpoint, mandatory, optional = [], associationsMap = {}) => {
 
       it('should respond 200 with a ' + endpoint + ' list if no id provided',
          done => {
-        server.get('/' + endpoint)
+        server.get(prepath + endpoint)
         .expect('Content-Type', /json/)
         .expect(200)
         .end((err, res) => {
@@ -172,18 +173,18 @@ module.exports = (endpoint, mandatory, optional = [], associationsMap = {}) => {
           Object.assign({}, testEntity, { id: instanceId2 }, anotherInstance)
         ].forEach(instance => {
             promises.push(new Promise(resolve => {
-              const path = '/' + endpoint + '(' + instance.id + ')';
-              server.get(path)
+              const path = endpoint + '(' + instance.id + ')';
+              server.get(prepath + path)
               .expect('Content-Type', /json/)
               .expect(200)
               .end((err, res) => {
                 should.not.exist(err);
                 res.status.should.be.equal(200);
                 res.body[CONST.iotId].should.be.equal(instance.id);
-                res.body[CONST.iotSelfLink].should.be.equal(path);
+                res.body[CONST.iotSelfLink].should.be.equal('/' + path);
                 associatedModels.forEach(name => {
                   const navLink = name + CONST.navigationLink;
-                  res.body[navLink].should.be.equal(path + '/' + name);
+                  res.body[navLink].should.be.equal('/' + path + '/' + name);
                 });
                 mandatory.concat(optional).forEach(field => {
                   res.body[field].should.be.deepEqual(instance[field]);
@@ -198,7 +199,7 @@ module.exports = (endpoint, mandatory, optional = [], associationsMap = {}) => {
       });
 
       it('should respond 404 if invalid id is provided', done => {
-        server.get('/' + endpoint + '(0)')
+        server.get(prepath + endpoint + '(0)')
         .expect('Content-Type', /json/)
         .expect(404)
         .end((err, res) => {
@@ -213,7 +214,7 @@ module.exports = (endpoint, mandatory, optional = [], associationsMap = {}) => {
     });
 
     describe('POST /' + endpoint, () => {
-      const resource = '/' + endpoint;
+      const resource = prepath + endpoint;
 
       postError = (done, body, code, errno, error) => {
         server.post(resource).send(body)
@@ -442,7 +443,7 @@ module.exports = (endpoint, mandatory, optional = [], associationsMap = {}) => {
     describe('PATCH /' + endpoint + '(:id)', () => {
       let instanceId;
       const resource = () => {
-        return '/' + endpoint + '(' + instanceId + ')';
+        return prepath + endpoint + '(' + instanceId + ')';
       };
 
       patchError = (done, body, code, errno, error) => {
@@ -671,7 +672,7 @@ module.exports = (endpoint, mandatory, optional = [], associationsMap = {}) => {
     describe('DELETE /' + endpoint + '(:id)', () => {
       let instanceId;
       const resource = () => {
-        return '/' + endpoint + '(' + instanceId + ')';
+        return prepath + endpoint + '(' + instanceId + ')';
       };
 
       const deleteError = done => {
@@ -766,7 +767,7 @@ module.exports = (endpoint, mandatory, optional = [], associationsMap = {}) => {
               body[associationsMap[linkedModel]] = {
                 '@iot.id': instance.id
               };
-              server.post('/' + endpoint).send(body)
+              server.post(prepath + endpoint).send(body)
               .expect(201)
               .end((err, res) => {
                 should.not.exist(err);
@@ -774,7 +775,7 @@ module.exports = (endpoint, mandatory, optional = [], associationsMap = {}) => {
               });
             });
           }).then(id => {
-            server.delete('/' + endpoint + '(' + id + ')').send()
+            server.delete(prepath + endpoint + '(' + id + ')').send()
             .expect(204)
             .end((err) => {
               should.not.exist(err);
