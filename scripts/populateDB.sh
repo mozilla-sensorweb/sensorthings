@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-export HOST=http://localhost:8080
+export HOST=http://localhost:8080/v1.0
 
 # CREATE THINGS
 # ----------------------------------------
