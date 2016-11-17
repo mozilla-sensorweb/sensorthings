@@ -122,19 +122,19 @@ module.exports = config => {
     const id = entity[iotId];
     const attributes = Object.keys(entity);
 
-    if (attributes.length > 1) {
-      // According to section 10.2.1.2, if any parameter other than '@iot.id' is
-      // sent in a linked entity (even if it also includes @iot.id), we need to
-      // create a new instance of the associated entity.
-      Reflect.deleteProperty(entity, 'id');
-      return instance['create' + singularName](entity, { transaction });
+    if (attributes.length === 1 && id) {
+      // According to section 10.2.1.1, if the only parameter of a linked entity
+      // in the body is '@iot.id', we need to associate that instance to the one
+      // that is being created.
+      return applyAssociation(transaction, model, association.associationType,
+                              singularName, id, instance);
     }
 
-    // According to section 10.2.1.1, if the only parameter of a linked entity
-    // in the body is '@iot.id', we need to associate that instance to the one
-    // that is being created.
-    return applyAssociation(transaction, model, association.associationType,
-                            singularName, id, instance);
+    // According to section 10.2.1.2, if any parameter other than '@iot.id' is
+    // sent in a linked entity (even if it also includes @iot.id), we need to
+    // create a new instance of the associated entity.
+    Reflect.deleteProperty(entity, 'id');
+    return instance['create' + singularName](entity, { transaction });
   }
 
   // Transaction method that links all the associated models in the body

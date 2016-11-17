@@ -34,9 +34,15 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       get: function get () {
         const time = this.getDataValue('time');
+        if (!time) {
+          return;
+        }
         return new Date(time).toISOString();
       },
       set: function set (value) {
+        if (!value) {
+          return;
+        }
         this.setDataValue('time', new Date(value).toISOString())
       }
     }

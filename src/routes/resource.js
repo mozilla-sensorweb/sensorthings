@@ -4,7 +4,11 @@ import response   from '../response';
 
 import * as ERR   from '../errors';
 
-module.exports = function resource(endpoint, exclude, associations = []) {
+module.exports = function resource(endpoint, exclude) {
+
+  const associations = models => {
+    return Object.keys(models[endpoint].associations);
+  };
 
   const handleModelError = res => {
     return err => {
@@ -36,13 +40,15 @@ module.exports = function resource(endpoint, exclude, associations = []) {
             return ERR.ApiError(res, 404, ERR.ERRNO_RESOURCE_NOT_FOUND,
                                 ERR.NOT_FOUND);
           }
-          res.status(200).send(response.generate(instance, associations));
+          const associationModels = associations(models);
+          res.status(200).send(response.generate(instance, associationModels));
         });
       } else {
         models[endpoint].findAll({
           attributes: { exclude }
         }).then(instances => {
-          res.status(200).send(response.generate(instances, associations));
+          const associationModels = associations(models);
+          res.status(200).send(response.generate(instances, associationModels));
         });
       }
     }).catch(() => {
@@ -55,7 +61,7 @@ module.exports = function resource(endpoint, exclude, associations = []) {
       models.createInstance(endpoint, req.body).then(instance => {
         // XXX #13 Response urls should be absolute
         res.location('/' + endpoint + '(' + instance.id + ')');
-        res.status(201).send(response.generate(instance, associations));
+        res.status(201).send(response.generate(instance, associations(models)));
       }).catch(handleModelError(res));
     }).catch(() => {
       ERR.ApiError(res, 500, ERR.ERRNO_INTERNAL_ERROR, ERR.INTERNAL_ERROR);
@@ -74,7 +80,7 @@ module.exports = function resource(endpoint, exclude, associations = []) {
       models.updateInstance(endpoint, id, req.body, exclude)
       .then(instance => {
         res.location('/' + endpoint + '(' + id + ')');
-        res.status(200).json(response.generate(instance, associations));
+        res.status(200).json(response.generate(instance, associations(models)));
       }).catch(handleModelError(res));
     }).catch(() => {
       ERR.ApiError(res, 500, ERR.ERRNO_INTERNAL_ERROR, ERR.INTERNAL_ERROR);
