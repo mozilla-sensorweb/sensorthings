@@ -24,9 +24,10 @@ import { entities }  from './constants';
   *
   */
 
-  generate: endpoint => {
+  generate: (version, endpoint) => {
     const possibleEndpoints = '(?:' + entities.join('|') + ')';
-    const previousEndpoints = '^\\/(?:' + possibleEndpoints + '\\(\\d+\\)\\/)*';
+    const previousEndpoints =
+      '^\\/' + version + '\\/(?:' + possibleEndpoints + '\\(\\d+\\)\\/)*';
     const finalEndpoint = endpoint ? endpoint : possibleEndpoints;
     const id = '(?:\\((\\d+)\\))?';
     const property = '(?:\\/([a-z]\\w*)(?:\\/(\\$value|\\$ref))?)?'

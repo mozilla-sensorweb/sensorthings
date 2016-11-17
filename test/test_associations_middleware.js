@@ -19,13 +19,15 @@ const entities = CONST.entities;
 
 const server = supertest.agent(app);
 
+const prepath = '/v1.0/';
+
 const getPlural = plural => {
   return (plural === 'FeaturesOfInterests') ? CONST.featuresOfInterest
                                             : plural;
 };
 
 const getError = (done, endpoint, code, errno, error) => {
-  server.get(endpoint)
+  server.get(prepath + endpoint)
   .expect('Content-Type', /json/)
   .expect(code)
   .end((err, res) => {
@@ -54,7 +56,7 @@ db().then(models => {
     describe('Invalid associations', () => {
       entities.forEach(model => {
         noAssociations[model].forEach(anotherModel => {
-          const endpoint = '/' + model + '(1)/' + anotherModel;
+          const endpoint = model + '(1)/' + anotherModel;
           it('GET ' + endpoint + ' should respond 400 errno 102 ' +
              'INVALID_ASSOCIATION', done => {
             getError(done, endpoint, 400, ERRNOS[ERR.ERRNO_INVALID_ASSOCIATION],
@@ -67,7 +69,7 @@ db().then(models => {
     describe('Valid associations but not found entity', () => {
       entities.forEach(model => {
         Object.keys(models[model].associations).forEach(association => {
-          const endpoint = '/' + model + '(1)/' + association;
+          const endpoint = model + '(1)/' + association;
           // XXX Issues #18, #22 and #23.
           const notImplemented = [
             'Datastreams',
@@ -121,7 +123,7 @@ db().then(models => {
           return Promise.all(promises);
         }).then(results => {
           let plural = getPlural(results[0].$modelOptions.name.plural);
-          let url = '/' +  plural + '(' + results[0].id + ')/';
+          let url = plural + '(' + results[0].id + ')/';
           for (let i = 1; i < results.length; i++) {
             const name = getPlural(results[i].$modelOptions.name.plural);
             endpoints.push(url + name + '(' + results[i].id + ')');
