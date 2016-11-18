@@ -53,6 +53,12 @@
 
 module.exports = (sequelize, DataTypes) => {
   const Observation = sequelize.define('Observations', {
+    id: {
+      type: DataTypes.BIGINT,
+      primaryKey: true,
+      autoIncrement: true,
+      allowNull: false
+    },
     phenomenonTime: {
       type: DataTypes.DATE,
       allowNull: false,

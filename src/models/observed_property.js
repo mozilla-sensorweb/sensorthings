@@ -33,6 +33,12 @@
 
 module.exports = (sequelize, DataTypes) => {
   const ObservedProperty = sequelize.define('ObservedProperties', {
+    id: {
+      type: DataTypes.BIGINT,
+      primaryKey: true,
+      autoIncrement: true,
+      allowNull: false
+    },
     name: { type: DataTypes.STRING(255), allowNull: false },
     definition: {
       type: DataTypes.TEXT,

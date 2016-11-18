@@ -252,7 +252,7 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
             CONST.excludedFields[endpoint].forEach(field => {
               should.not.exist(res.body[field]);
             });
-            res.body[CONST.iotId].should.be.instanceOf(Number);
+            res.body[CONST.iotId].should.exist;
             res.body[CONST.iotSelfLink].should.be.equal(fullPrepath + path);
             Object.keys(associations).forEach(name => {
               const navLink = name + CONST.navigationLink;

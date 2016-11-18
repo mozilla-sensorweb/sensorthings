@@ -29,6 +29,12 @@
 
 module.exports = (sequelize, DataTypes) => {
   const HistoricalLocation = sequelize.define('HistoricalLocations', {
+    id: {
+      type: DataTypes.BIGINT,
+      primaryKey: true,
+      autoIncrement: true,
+      allowNull: false
+    },
     time: {
       type: DataTypes.DATE,
       allowNull: false,

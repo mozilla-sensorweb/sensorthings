@@ -38,6 +38,12 @@ import { encodingTypes } from '../constants';
 
 module.exports = (sequelize, DataTypes) => {
   const Sensor = sequelize.define('Sensors', {
+    id: {
+      type: DataTypes.BIGINT,
+      primaryKey: true,
+      autoIncrement: true,
+      allowNull: false
+    },
     name: { type: DataTypes.STRING(255), allowNull: false },
     description: { type: DataTypes.STRING(500), allowNull: false },
     encodingType: {
