@@ -107,7 +107,7 @@ module.exports = (sequelize, DataTypes) => {
       },
       set: function set(value) {
         if (!value) {
-          return;
+          return this.setDataValue('validTime', null);
         }
         this.setDataValue('validTime', new Date(value).toISOString());
       }
