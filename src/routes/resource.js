@@ -34,16 +34,37 @@ module.exports = function resource(endpoint, exclude, version) {
                     req.socket.localPort + '/' + version + '/';
     db().then(models => {
       if (req.params && req.params[0]) {
+        const property = req.params[1];
+        let attributes = { exclude };
+        if (property) {
+          attributes.include = [ property ];
+        }
+
         models[endpoint].findById(req.params[0], {
-          attributes: { exclude }
+          attributes
         }).then(instance => {
           if (!instance) {
             return ERR.ApiError(res, 404, ERR.ERRNO_RESOURCE_NOT_FOUND,
                                 ERR.NOT_FOUND);
           }
+
+          if (property) {
+            // If the value of the property is null, it should respond 204
+            if (!instance[property]) {
+              return res.status(204).send();
+            }
+
+            let body = {};
+            body[property] = instance[property];
+            return res.status(200).send(body);
+          }
+
           const associationModels = associations(models);
           res.status(200).send(response.generate(instance, associationModels,
                                                  prepath, exclude));
+        }).catch(() => {
+          return ERR.ApiError(res, 404, ERR.ERRNO_RESOURCE_NOT_FOUND,
+                                ERR.NOT_FOUND);
         });
       } else {
         models[endpoint].findAll({

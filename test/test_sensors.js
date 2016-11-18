@@ -5,10 +5,9 @@ import {
   ERRNO_VALIDATION_ERROR
 } from '../src/errors';
 
-const mandatory     = ['name', 'description', 'encodingType'];
-const optional      = ['metadata'];
+const mandatory     = ['name', 'description', 'encodingType', 'metadata'];
 
-commonTests(CONST.sensors, 8887, mandatory, optional).then(tester => {
+commonTests(CONST.sensors, 8887, mandatory).then(tester => {
   describe('Sensors API - specific', () => {
     describe('Check invalid ecodingTypes', () => {
 

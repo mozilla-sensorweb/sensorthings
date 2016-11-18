@@ -103,8 +103,9 @@ module.exports = (sequelize, DataTypes) => {
       },
       set: function set(value) {
         if (!value) {
-          return;
+          return this.setDataValue('phenomenonTime', null);
         }
+
         this.setDataValue('phenomenonTime', new Date(value).toISOString());
       }
     },
@@ -119,7 +120,7 @@ module.exports = (sequelize, DataTypes) => {
       },
       set: function set(value) {
         if (!value) {
-          return;
+          return this.setDataValue('resultTime', null);
         }
         this.setDataValue('resultTime', new Date(value).toISOString());
       }
