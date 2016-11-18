@@ -11,6 +11,8 @@ const anotherjson = {
   key: 'anothervalue'
 };
 
+const obsTypeUrl = 'http://www.opengis.net/def/observationType/OGC-OM/2.0/';
+
 const testConstants = Object.assign({}, Const, {
   anotherlocation: {
     'type': 'Point',
@@ -31,6 +33,8 @@ const testConstants = Object.assign({}, Const, {
     'type': 'Point',
     'coordinates': [-114.05, 51.05]
   },
+  observationType:  obsTypeUrl + 'OM_Observation',
+  anotherobservationType: obsTypeUrl + 'OM_CountObservation',
   metadata: 'http://example.org/TMP35_36_37.pdf',
   name: 'name',
   navigationLink: '@iot.navigationLink',
@@ -72,6 +76,7 @@ module.exports = Object.assign({}, testConstants, {
     }
   },
   ObservationsEntity: {
+    observationType: testConstants.observationType,
     phenomenonTime: testConstants.time,
     result: testConstants.result,
     resultTime: testConstants.time,
