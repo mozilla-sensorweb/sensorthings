@@ -54,7 +54,8 @@ module.exports = Object.assign({}, testConstants, {
     description: testConstants.description,
     unitOfMeasurement: testConstants.unitOfMeasurement,
     phenomenonTime: testConstants.time,
-    resultTime: testConstants.time
+    resultTime: testConstants.time,
+    observationType: testConstants.observationType
   },
   FeaturesOfInterestEntity: {
     name: testConstants.name,
@@ -76,7 +77,6 @@ module.exports = Object.assign({}, testConstants, {
     }
   },
   ObservationsEntity: {
-    observationType: testConstants.observationType,
     phenomenonTime: testConstants.time,
     result: testConstants.result,
     resultTime: testConstants.time,

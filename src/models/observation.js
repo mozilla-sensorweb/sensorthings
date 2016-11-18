@@ -4,8 +4,6 @@
 
 'use strict';
 
-import { observationTypes } from '../constants';
-
 /**
  * 8.2.7 Observation
  *
@@ -76,13 +74,6 @@ module.exports = (sequelize, DataTypes) => {
           return;
         }
         this.setDataValue('phenomenonTime', new Date(value).toISOString());
-      }
-    },
-    observationType: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      validate: {
-        isIn: [ Object.values(observationTypes) ]
       }
     },
     result: { type: DataTypes.JSONB, allowNull: false },

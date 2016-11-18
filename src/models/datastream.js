@@ -4,6 +4,8 @@
 
 'use strict';
 
+import { observationTypes } from '../constants';
+
 /**
  * 8.2.4 Datastream Entity
  *
@@ -81,6 +83,15 @@ module.exports = (sequelize, DataTypes) => {
     // XXX  Define observationType property #15
     // observationType: { type: DataTypes.INTEGER, allowNull: false },
     observedArea: { type: DataTypes.GEOMETRY('POINT', 4326) },
+    observationType: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      validate: {
+        isIn: [ Object.keys(observationTypes).map(type => {
+          return observationTypes[type];
+        })]
+      }
+    },
     phenomenonTime: {
       type: DataTypes.DATE,
       get: function get() {
