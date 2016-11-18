@@ -1,8 +1,7 @@
 import resource    from './resource';
 import {
   excludedFields,
-  historicalLocations,
-  thingId
+  historicalLocations
 } from '../constants';
 
 /**
@@ -53,7 +52,7 @@ import {
  **/
 
 const endpoint = historicalLocations;
-const exclude  = excludedFields.concat([thingId]);
+const exclude  = excludedFields[historicalLocations];
 
 module.exports = function historicalLocationsRouter(version) {
   return resource(endpoint, exclude, version);

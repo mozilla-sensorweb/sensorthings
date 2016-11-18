@@ -51,7 +51,8 @@ import {
  **/
 
 const endpoint = things;
+const exclude  = excludedFields[things];
 
 module.exports = function thingsRouter(version) {
-  return resource(endpoint, excludedFields, version);
+  return resource(endpoint, exclude, version);
 }

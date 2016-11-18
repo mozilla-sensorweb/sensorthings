@@ -43,9 +43,27 @@ export const entities = [
   things
 ];
 
-export const createdAt      = 'createdAt';
-export const updatedAt      = 'updatedAt';
-export const excludedFields = [createdAt, updatedAt];
+export const datastreamId = 'DatastreamId';
+export const thingId = 'ThingId';
+export const sensorId = 'SensorId';
+export const observedPropertyId = 'ObservedPropertyId';
+export const featuresOfInterestId = 'FeaturesOfInterestId';
+
+export const createdAt = 'createdAt';
+export const updatedAt = 'updatedAt';
+export const commonExcludedFields = [createdAt, updatedAt];
+export const excludedFields = {
+  'Datastreams': commonExcludedFields.concat([thingId, sensorId,
+                                              observedPropertyId]),
+  'FeaturesOfInterest': commonExcludedFields,
+  'HistoricalLocations': commonExcludedFields.concat([thingId]),
+  'Locations': commonExcludedFields,
+  'Observations': commonExcludedFields.concat([featuresOfInterestId,
+                                               datastreamId]),
+  'ObservedProperties': commonExcludedFields,
+  'Sensors': commonExcludedFields,
+  'Things': commonExcludedFields,
+};
 
 export const encodingTypes = {
   UNKNOWN: 'unknown',
@@ -56,11 +74,6 @@ export const encodingTypes = {
   LOCATION_TYPE: 'http://example.org/location_types#GeoJSON',
   TYPE_DESCRIPTION: 'http://schema.org/description'
 };
-
-export const thingId = 'ThingId';
-export const sensorId = 'SensorId';
-export const observedPropertyId = 'ObservedPropertyId';
-export const featuresOfInterestId = 'FeaturesOfInterestId';
 
 export const iotCount = '@iot.count';
 export const iotId = '@iot.id';

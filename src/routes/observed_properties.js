@@ -50,7 +50,8 @@ import {
  **/
 
 const endpoint = observedProperties;
+const exclude  = excludedFields[observedProperties];
 
 module.exports = function observedPropertiesRouter(version) {
-  return resource(endpoint, excludedFields, version);
+  return resource(endpoint, exclude, version);
 }

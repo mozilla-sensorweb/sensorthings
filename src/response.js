@@ -7,20 +7,16 @@
  */
 
 import {
-  createdAt,
   featuresOfInterest,
   iotCount,
   navigationLink,
-  updatedAt
 } from './constants';
 
 const FIELDS_TO_FILTER = [
-  'id',
-  createdAt,
-  updatedAt
+  'id'
 ];
 
-const formatItem = (item, associations, prepath) => {
+const formatItem = (item, associations, prepath, exclude) => {
   // We need to get the data directly from item (and not item.dataValues) so
   // getters and setters of the models are called.
   const name = item.$modelOptions.name;
@@ -40,7 +36,7 @@ const formatItem = (item, associations, prepath) => {
   });
 
   Object.keys(item.dataValues).forEach(key => {
-    if (FIELDS_TO_FILTER.indexOf(key) === -1) {
+    if (FIELDS_TO_FILTER.concat(exclude).indexOf(key) === -1) {
       formatedItem[key] = item[key];
     }
   });
@@ -48,19 +44,19 @@ const formatItem = (item, associations, prepath) => {
   return formatedItem;
 }
 
-const generate = (resource, associations, prepath) => {
+const generate = (resource, associations, prepath, exclude) => {
   if (resource && Array.isArray(resource)) {
     let response = {};
     response[iotCount] = resource.length;
     response.value = [];
     resource.forEach(item => {
-      response.value.push(formatItem(item, associations, prepath));
+      response.value.push(formatItem(item, associations, prepath, exclude));
     });
 
     return response;
   }
 
-  return formatItem(resource, associations, prepath);
+  return formatItem(resource, associations, prepath, exclude);
 }
 
 module.exports = {
