@@ -55,4 +55,6 @@ import {
 const endpoint = historicalLocations;
 const exclude  = excludedFields.concat([thingId]);
 
-module.exports = resource(endpoint, exclude);
+module.exports = function historicalLocationsRouter(version) {
+  return resource(endpoint, exclude, version);
+}

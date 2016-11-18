@@ -2,12 +2,8 @@ import resource from './resource';
 import {
   datastreams,
   excludedFields,
-  observations,
-  observedProperties,
   observedPropertyId,
-  sensors,
   sensorId,
-  things,
   thingId
 } from '../constants';
 
@@ -67,7 +63,8 @@ import {
  **/
 
 const endpoint = datastreams;
-const associations = [things, sensors, observedProperties, observations];
 const exclude = excludedFields.concat([thingId, sensorId, observedPropertyId]);
 
-module.exports = resource(endpoint, exclude, associations);
+module.exports = function datastreamsRouter(version) {
+  return resource(endpoint, exclude, version);
+}

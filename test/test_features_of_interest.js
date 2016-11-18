@@ -8,7 +8,8 @@ import {
 const mandatory     = ['name', 'description', 'encodingType', 'feature'];
 const optional      = [];
 
-commonTests(CONST.featuresOfInterest, mandatory, optional).then(tester => {
+commonTests(CONST.featuresOfInterest, 8881, mandatory, optional).then(
+  tester => {
   describe('FeaturesOfInterest API - specific', () => {
     describe('Check invalid encodingTypes', () => {
 

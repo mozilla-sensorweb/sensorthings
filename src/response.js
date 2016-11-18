@@ -20,8 +20,7 @@ const FIELDS_TO_FILTER = [
   updatedAt
 ];
 
-// XXX Response urls should be absolute #13.
-const formatItem = (item, associations) => {
+const formatItem = (item, associations, prepath) => {
   // We need to get the data directly from item (and not item.dataValues) so
   // getters and setters of the models are called.
   const name = item.$modelOptions.name;
@@ -32,12 +31,12 @@ const formatItem = (item, associations) => {
   ].indexOf(name.singular) === -1 ? name.plural : name.singular;
   let formatedItem = {
     '@iot.id': item.id,
-    '@iot.selfLink': '/' + resourceName + '(' + item.id + ')'
+    '@iot.selfLink': prepath + resourceName + '(' + item.id + ')'
   };
 
   associations && associations.forEach(association => {
     formatedItem[association + navigationLink] =
-      '/' + resourceName + '(' + item.id + ')/' + association;
+      prepath + resourceName + '(' + item.id + ')/' + association;
   });
 
   Object.keys(item.dataValues).forEach(key => {
@@ -49,19 +48,19 @@ const formatItem = (item, associations) => {
   return formatedItem;
 }
 
-const generate = (resource, associations) => {
+const generate = (resource, associations, prepath) => {
   if (resource && Array.isArray(resource)) {
     let response = {};
     response[iotCount] = resource.length;
     response.value = [];
     resource.forEach(item => {
-      response.value.push(formatItem(item, associations));
+      response.value.push(formatItem(item, associations, prepath));
     });
 
     return response;
   }
 
-  return formatItem(resource, associations);
+  return formatItem(resource, associations, prepath);
 }
 
 module.exports = {

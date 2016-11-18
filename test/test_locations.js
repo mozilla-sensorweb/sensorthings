@@ -7,7 +7,7 @@ import {
 
 const mandatory     = ['name', 'description', 'encodingType', 'location'];
 
-commonTests('Locations', mandatory).then(tester => {
+commonTests(CONST.locations, 8884, mandatory).then(tester => {
   describe('Locations API - specific', () => {
     describe('Check invalid ecodingTypes', () => {
       [CONST.encodingTypes.UNKNOWN,

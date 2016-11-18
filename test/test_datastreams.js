@@ -11,4 +11,4 @@ const mandatory     = [
 ];
 const optional      = ['phenomenonTime', 'resultTime'];
 
-commonTests(datastreams, mandatory, optional);
+commonTests(datastreams, 8880, mandatory, optional);

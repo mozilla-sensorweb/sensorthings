@@ -1,8 +1,7 @@
 import resource from './resource';
 import {
   excludedFields,
-  featuresOfInterest,
-  observations
+  featuresOfInterest
 } from '../constants';
 
 /**
@@ -49,6 +48,7 @@ import {
  **/
 
 const endpoint = featuresOfInterest;
-const associations = [observations];
 
-module.exports = resource(endpoint, excludedFields, associations);
+module.exports = function featuresOfInterestRouter(version) {
+  return resource(endpoint, excludedFields, version);
+}

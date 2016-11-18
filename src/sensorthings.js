@@ -35,7 +35,7 @@ module.exports = (config) => {
 
   entities.forEach(endpoint => {
     router.use(route.generate(version, endpoint),
-               require('./routes/' + snake(endpoint)));
+               require('./routes/' + snake(endpoint))(version));
   });
 
   return router;
