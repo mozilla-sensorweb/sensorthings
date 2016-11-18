@@ -60,6 +60,7 @@ export const encodingTypes = {
 export const thingId = 'ThingId';
 export const sensorId = 'SensorId';
 export const observedPropertyId = 'ObservedPropertyId';
+export const featuresOfInterestId = 'FeaturesOfInterestId';
 
 export const iotCount = '@iot.count';
 export const iotId = '@iot.id';
