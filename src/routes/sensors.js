@@ -51,7 +51,8 @@ import {
  **/
 
 const endpoint = sensors;
+const exclude  = excludedFields[sensors];
 
 module.exports = function sensorsRouter(version) {
-  return resource(endpoint, excludedFields, version);
+  return resource(endpoint, exclude, version);
 }

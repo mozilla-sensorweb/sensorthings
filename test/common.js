@@ -158,8 +158,9 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
                 }
                 value[field].should.be.deepEqual(expected[0]);
               });
-              should.not.exist(value.createdAt);
-              should.not.exist(value.updatedAt);
+              CONST.excludedFields[endpoint].forEach(field => {
+                should.not.exist(value[field]);
+              });
             });
             done();
           });
@@ -194,8 +195,9 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
                   mandatory.concat(optional).forEach(field => {
                     res.body[field].should.be.deepEqual(instance[field]);
                   });
-                  should.not.exist(res.body.createdAt);
-                  should.not.exist(res.body.updatedAt);
+                  CONST.excludedFields[endpoint].forEach(field => {
+                    should.not.exist(res.body[field]);
+                  });
                   resolve();
                 });
               }));
@@ -246,6 +248,9 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
             res.status.should.be.equal(201);
             mandatory.concat(optional).forEach(property => {
               res.body[property].should.be.deepEqual(testEntity[property]);
+            });
+            CONST.excludedFields[endpoint].forEach(field => {
+              should.not.exist(res.body[field]);
             });
             res.body[CONST.iotId].should.be.instanceOf(Number);
             res.body[CONST.iotSelfLink].should.be.equal(fullPrepath + path);
@@ -459,6 +464,9 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
             res.status.should.be.equal(200);
             mandatory.concat(optional).forEach(property => {
               res.body[property].should.be.deepEqual(expected[property]);
+            });
+            CONST.excludedFields[endpoint].forEach(field => {
+              should.not.exist(res.body[field]);
             });
             res.body[CONST.iotId].should.be.equal(instanceId);
             should.exist(res.body[CONST.iotSelfLink]);

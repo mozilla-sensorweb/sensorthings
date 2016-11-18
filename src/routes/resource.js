@@ -43,7 +43,7 @@ module.exports = function resource(endpoint, exclude, version) {
           }
           const associationModels = associations(models);
           res.status(200).send(response.generate(instance, associationModels,
-                                                 prepath));
+                                                 prepath, exclude));
         });
       } else {
         models[endpoint].findAll({
@@ -51,7 +51,7 @@ module.exports = function resource(endpoint, exclude, version) {
         }).then(instances => {
           const associationModels = associations(models);
           res.status(200).send(response.generate(instances, associationModels,
-                                                 prepath));
+                                                 prepath, exclude));
         });
       }
     }).catch(() => {
@@ -63,11 +63,11 @@ module.exports = function resource(endpoint, exclude, version) {
     const prepath = req.protocol + '://' + req.hostname + ':' +
                     req.socket.localPort + '/' + version + '/';
     db().then(models => {
-      models.createInstance(endpoint, req.body).then(instance => {
+      models.createInstance(endpoint, req.body, exclude).then(instance => {
         // XXX #13 Response urls should be absolute
         res.location(prepath + endpoint + '(' + instance.id + ')');
         res.status(201).send(response.generate(instance, associations(models),
-                                               prepath));
+                                               prepath, exclude));
       }).catch(handleModelError(res));
     }).catch(() => {
       ERR.ApiError(res, 500, ERR.ERRNO_INTERNAL_ERROR, ERR.INTERNAL_ERROR);
@@ -89,7 +89,7 @@ module.exports = function resource(endpoint, exclude, version) {
       .then(instance => {
         res.location(prepath + endpoint + '(' + id + ')');
         res.status(200).json(response.generate(instance, associations(models),
-                                               prepath));
+                                               prepath, exclude));
       }).catch(handleModelError(res));
     }).catch(() => {
       ERR.ApiError(res, 500, ERR.ERRNO_INTERNAL_ERROR, ERR.INTERNAL_ERROR);

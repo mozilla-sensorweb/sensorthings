@@ -50,7 +50,8 @@ import {
  **/
 
 const endpoint = locations;
+const exclude  = excludedFields[locations];
 
 module.exports = function locationsRouter(version) {
-  return resource(endpoint, excludedFields, version);
+  return resource(endpoint, exclude, version);
 }

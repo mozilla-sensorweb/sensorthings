@@ -48,7 +48,8 @@ import {
  **/
 
 const endpoint = featuresOfInterest;
+const exclude = excludedFields[featuresOfInterest];
 
 module.exports = function featuresOfInterestRouter(version) {
-  return resource(endpoint, excludedFields, version);
+  return resource(endpoint, exclude, version);
 }

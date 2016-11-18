@@ -90,8 +90,12 @@ module.exports = config => {
   };
 
   const applyAssociation = (transaction, model, associationType,
-                            associationName, id, instance, primaryKey) => {
-    return model.findById(id, { transaction }).then(found => {
+                            associationName, exclude, id, instance,
+                            primaryKey) => {
+    return model.findById(id, {
+      attributes: { exclude },
+      transaction
+    }).then(found => {
       if (!found) {
         return Promise.reject({
           name: BAD_REQUEST,
@@ -117,7 +121,7 @@ module.exports = config => {
 
   // Finds an specific entity, and associates it to the given instance.
   const createAssociation = (instance, model, association, entity,
-                             transaction) => {
+                             transaction, exclude) => {
     const singularName = model.options.name.singular;
     const id = entity[iotId];
     const attributes = Object.keys(entity);
@@ -127,7 +131,7 @@ module.exports = config => {
       // in the body is '@iot.id', we need to associate that instance to the one
       // that is being created.
       return applyAssociation(transaction, model, association.associationType,
-                              singularName, id, instance);
+                              singularName, exclude, id, instance);
     }
 
     // According to section 10.2.1.2, if any parameter other than '@iot.id' is
@@ -140,7 +144,7 @@ module.exports = config => {
   // Transaction method that links all the associated models in the body
   // for an specific model. It returns a promise that resolves with the linked
   // instance
-  db.createInstance = (modelName, entity) => {
+  db.createInstance = (modelName, entity, exclude) => {
     return db.sequelize.transaction(transaction => {
       return db[modelName].create(entity, {
         transaction
@@ -178,7 +182,8 @@ module.exports = config => {
 
             relatedEntities.forEach(relatedEntity => {
               promises.push(createAssociation(instance, model, association,
-                                              relatedEntity, transaction));
+                                              relatedEntity, transaction,
+                                              exclude));
             });
           });
         } catch(error) {
@@ -260,7 +265,7 @@ module.exports = config => {
                   applyAssociation(transaction, association.target,
                                    association.associationType,
                                    association.options.name.singular,
-                                   id, instance, id)
+                                   exclude, id, instance, id)
                 );
               });
             });
