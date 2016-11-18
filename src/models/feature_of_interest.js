@@ -50,6 +50,12 @@ import {
 
 module.exports = (sequelize, DataTypes) => {
   const FeatureOfInterest = sequelize.define(featuresOfInterest, {
+    id: {
+      type: DataTypes.BIGINT,
+      primaryKey: true,
+      autoIncrement: true,
+      allowNull: false
+    },
     name: { type: DataTypes.STRING(255), allowNull: false },
     description: { type: DataTypes.STRING(500), allowNull: false },
     encodingType: {

@@ -69,6 +69,12 @@
 
 module.exports = (sequelize, DataTypes) => {
   const Datastream = sequelize.define('Datastreams', {
+    id: {
+      type: DataTypes.BIGINT,
+      primaryKey: true,
+      autoIncrement: true,
+      allowNull: false
+    },
     name: { type: DataTypes.STRING(255), allowNull: false },
     description: { type: DataTypes.STRING(500), allowNull: false },
     unitOfMeasurement: { type: DataTypes.JSONB, allowNull: false },

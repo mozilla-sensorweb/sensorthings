@@ -48,6 +48,12 @@
 
 module.exports = (sequelize, DataTypes) => {
   const Thing = sequelize.define('Things', {
+    id: {
+      type: DataTypes.BIGINT,
+      primaryKey: true,
+      autoIncrement: true,
+      allowNull: false
+    },
     name: { type: DataTypes.STRING(255), allowNull: false },
     description: { type: DataTypes.STRING(500), allowNull: false },
     properties: { type: DataTypes.JSONB }
