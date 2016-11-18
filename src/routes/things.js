@@ -52,4 +52,6 @@ import {
 
 const endpoint = things;
 
-module.exports = resource(endpoint, excludedFields);
+module.exports = function thingsRouter(version) {
+  return resource(endpoint, excludedFields, version);
+}

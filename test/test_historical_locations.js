@@ -1,5 +1,6 @@
 import commonTests from './common';
+import { historicalLocations } from './constants';
 
 const mandatory     = ['time'];
 
-commonTests('HistoricalLocations', mandatory);
+commonTests(historicalLocations, 8882, mandatory);

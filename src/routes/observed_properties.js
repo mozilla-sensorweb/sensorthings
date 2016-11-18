@@ -1,7 +1,6 @@
 import resource    from './resource';
 import {
   excludedFields,
-  datastreams,
   observedProperties
 } from '../constants';
 
@@ -50,7 +49,8 @@ import {
  * }
  **/
 
-const associations = [datastreams];
 const endpoint = observedProperties;
 
-module.exports = resource(endpoint, excludedFields, associations);
+module.exports = function observedPropertiesRouter(version) {
+  return resource(endpoint, excludedFields, version);
+}

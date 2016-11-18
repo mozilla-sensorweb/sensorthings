@@ -8,7 +8,7 @@ import {
 const mandatory     = ['name', 'description', 'encodingType'];
 const optional      = ['metadata'];
 
-commonTests('Sensors', mandatory, optional).then(tester => {
+commonTests(CONST.sensors, 8887, mandatory, optional).then(tester => {
   describe('Sensors API - specific', () => {
     describe('Check invalid ecodingTypes', () => {
 

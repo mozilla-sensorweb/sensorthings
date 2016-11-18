@@ -7,4 +7,4 @@ const mandatory     = ['phenomenonTime', 'result', 'resultTime'];
 // XXX #16 resultQuality
 const optional      = ['validTime', 'parameters'];
 
-commonTests(observations, mandatory, optional);
+commonTests(observations, 8885, mandatory, optional);

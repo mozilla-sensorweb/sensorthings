@@ -14,11 +14,12 @@ import * as ERR from '../src/errors';
 / optional: Array - Optional (if any) fields we want to check, i.e ['meta']
 */
 
-module.exports = (endpoint, mandatory, optional = []) => {
-  const server           = supertest.agent(app);
+module.exports = (endpoint, port, mandatory, optional = []) => {
+  const server           = supertest.agent(app.listen(port));
   const ERRNOS           = ERR.errnos;
   const ERRORS           = ERR.errors;
   const prepath          = '/v1.0/';
+  const fullPrepath      = 'http://127.0.0.1:' + port + prepath;
   const testEntity       = CONST[endpoint + 'Entity'];
 
   const anotherValue = function anotherValue(property) {
@@ -133,8 +134,9 @@ module.exports = (endpoint, mandatory, optional = []) => {
                 instanceId,
                 instanceId2
               ]);
-              const selfLink = '/' + endpoint + '(' + instanceId + ')';
-              const selfLink2 = '/' + endpoint + '(' + instanceId2 + ')';
+              const selfLink = fullPrepath + endpoint + '(' + instanceId + ')';
+              const selfLink2 =
+                fullPrepath + endpoint + '(' + instanceId2 + ')';
               value[CONST.iotSelfLink].should.be.equalOneOf([
                 selfLink,
                 selfLink2
@@ -182,10 +184,12 @@ module.exports = (endpoint, mandatory, optional = []) => {
                   should.not.exist(err);
                   res.status.should.be.equal(200);
                   res.body[CONST.iotId].should.be.equal(instance.id);
-                  res.body[CONST.iotSelfLink].should.be.equal('/' + path);
+                  res.body[CONST.iotSelfLink].should.be.equal(fullPrepath +
+                                                              path);
                   Object.keys(associations).forEach(name => {
                     const navLink = name + CONST.navigationLink;
-                    res.body[navLink].should.be.equal('/' + path + '/' + name);
+                    res.body[navLink].should.be.equal(fullPrepath +
+                                                      path + '/' + name);
                   });
                   mandatory.concat(optional).forEach(field => {
                     res.body[field].should.be.deepEqual(instance[field]);
@@ -237,19 +241,20 @@ module.exports = (endpoint, mandatory, optional = []) => {
           .expect('Content-Type', /json/)
           .expect(201)
           .end((err, res) => {
-            const path = '/' + endpoint + '(' + res.body[CONST.iotId] + ')';
+            const path = endpoint + '(' + res.body[CONST.iotId] + ')';
             should.not.exist(err);
             res.status.should.be.equal(201);
             mandatory.concat(optional).forEach(property => {
               res.body[property].should.be.deepEqual(testEntity[property]);
             });
             res.body[CONST.iotId].should.be.instanceOf(Number);
-            res.body[CONST.iotSelfLink].should.be.equal(path);
+            res.body[CONST.iotSelfLink].should.be.equal(fullPrepath + path);
             Object.keys(associations).forEach(name => {
-            const navLink = name + CONST.navigationLink;
-              res.body[navLink].should.be.equal(path + '/' + name);
+              const navLink = name + CONST.navigationLink;
+              res.body[navLink].should.be.equal(fullPrepath + path + '/' +
+                                                name);
             });
-            res.header.location.should.be.equal(path);
+            res.header.location.should.be.equal(fullPrepath + path);
             const expectedModels = Object.keys(expected);
             Promise.all(expectedModels.map(name => {
               return models[name].findAndCountAll().then((result) => {
@@ -457,7 +462,7 @@ module.exports = (endpoint, mandatory, optional = []) => {
             });
             res.body[CONST.iotId].should.be.equal(instanceId);
             should.exist(res.body[CONST.iotSelfLink]);
-            res.header.location.should.be.equal('/' + endpoint + '(' +
+            res.header.location.should.be.equal(fullPrepath + endpoint + '(' +
                                                 res.body[CONST.iotId] + ')');
             return models[endpoint].findAndCountAll().then(result => {
               result.count.should.be.equal(1);

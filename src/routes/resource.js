@@ -4,8 +4,7 @@ import response   from '../response';
 
 import * as ERR   from '../errors';
 
-module.exports = function resource(endpoint, exclude) {
-
+module.exports = function resource(endpoint, exclude, version) {
   const associations = models => {
     return Object.keys(models[endpoint].associations);
   };
@@ -31,6 +30,8 @@ module.exports = function resource(endpoint, exclude) {
   let router = express.Router({ mergeParams: true });
 
   router.get('', (req, res) => {
+    const prepath = req.protocol + '://' + req.hostname + ':' +
+                    req.socket.localPort + '/' + version + '/';
     db().then(models => {
       if (req.params && req.params[0]) {
         models[endpoint].findById(req.params[0], {
@@ -41,14 +42,16 @@ module.exports = function resource(endpoint, exclude) {
                                 ERR.NOT_FOUND);
           }
           const associationModels = associations(models);
-          res.status(200).send(response.generate(instance, associationModels));
+          res.status(200).send(response.generate(instance, associationModels,
+                                                 prepath));
         });
       } else {
         models[endpoint].findAll({
           attributes: { exclude }
         }).then(instances => {
           const associationModels = associations(models);
-          res.status(200).send(response.generate(instances, associationModels));
+          res.status(200).send(response.generate(instances, associationModels,
+                                                 prepath));
         });
       }
     }).catch(() => {
@@ -57,11 +60,14 @@ module.exports = function resource(endpoint, exclude) {
   });
 
   router.post('/', (req, res) => {
+    const prepath = req.protocol + '://' + req.hostname + ':' +
+                    req.socket.localPort + '/' + version + '/';
     db().then(models => {
       models.createInstance(endpoint, req.body).then(instance => {
         // XXX #13 Response urls should be absolute
-        res.location('/' + endpoint + '(' + instance.id + ')');
-        res.status(201).send(response.generate(instance, associations(models)));
+        res.location(prepath + endpoint + '(' + instance.id + ')');
+        res.status(201).send(response.generate(instance, associations(models),
+                                               prepath));
       }).catch(handleModelError(res));
     }).catch(() => {
       ERR.ApiError(res, 500, ERR.ERRNO_INTERNAL_ERROR, ERR.INTERNAL_ERROR);
@@ -69,6 +75,8 @@ module.exports = function resource(endpoint, exclude) {
   });
 
   router.patch('', (req, res) => {
+    const prepath = req.protocol + '://' + req.hostname + ':' +
+                    req.socket.localPort + '/' + version + '/';
     const id = req.params && req.params[0];
     if (!id) {
       return ERR.ApiError(res, 404, ERR.ERRNO_RESOURCE_NOT_FOUND,
@@ -79,8 +87,9 @@ module.exports = function resource(endpoint, exclude) {
       Reflect.deleteProperty(req.body, 'id');
       models.updateInstance(endpoint, id, req.body, exclude)
       .then(instance => {
-        res.location('/' + endpoint + '(' + id + ')');
-        res.status(200).json(response.generate(instance, associations(models)));
+        res.location(prepath + endpoint + '(' + id + ')');
+        res.status(200).json(response.generate(instance, associations(models),
+                                               prepath));
       }).catch(handleModelError(res));
     }).catch(() => {
       ERR.ApiError(res, 500, ERR.ERRNO_INTERNAL_ERROR, ERR.INTERNAL_ERROR);

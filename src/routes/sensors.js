@@ -4,7 +4,6 @@
 
 import resource from './resource';
 import {
-  datastreams,
   excludedFields,
   sensors
 } from '../constants';
@@ -52,6 +51,7 @@ import {
  **/
 
 const endpoint = sensors;
-const associations = [datastreams];
 
-module.exports = resource(endpoint, excludedFields, associations);
+module.exports = function sensorsRouter(version) {
+  return resource(endpoint, excludedFields, version);
+}

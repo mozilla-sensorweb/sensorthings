@@ -51,4 +51,6 @@ import {
 
 const endpoint = locations;
 
-module.exports = resource(endpoint, excludedFields);
+module.exports = function locationsRouter(version) {
+  return resource(endpoint, excludedFields, version);
+}
