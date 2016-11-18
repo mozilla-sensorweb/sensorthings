@@ -73,6 +73,16 @@ export const encodingTypes = {
   TEXT_HTML: 'text/html',
   LOCATION_TYPE: 'http://example.org/location_types#GeoJSON',
   TYPE_DESCRIPTION: 'http://schema.org/description'
+}
+
+const obsTypeUrl = 'http://www.opengis.net/def/observationType/OGC-OM/2.0/';
+
+export const observationTypes = {
+  OM_CATEGORY_OBSERVATION: obsTypeUrl + 'OM_CategoryObservation',
+  OM_COUNT_OBSERVATION: obsTypeUrl + 'OM_CountObservation',
+  OM_MEASUREMENT: obsTypeUrl + 'OM_Measurement',
+  OM_OBSERVATION: obsTypeUrl + 'OM_Observation',
+  OM_TRUTH_OBSERVATION: obsTypeUrl + 'OM_TruthObservation'
 };
 
 export const iotCount = '@iot.count';
