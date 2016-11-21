@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import express   from 'express';
+import logger    from 'morgan-body';
 import { snake } from 'case';
 
 // Middlewares
@@ -29,6 +30,11 @@ module.exports = (config) => {
   db(config.db);
 
   let router = express.Router();
+
+  if (process.env.NODE_DEBUG === 'morgan') {
+    logger(router);
+  }
+
   router.use('/' + version + '/', baseRouter);
 
   router.use(route.generate(version), associations(version));
