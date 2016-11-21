@@ -70,7 +70,8 @@ The usual steps are:
   3. Create a [ObservedProperty](http://docs.opengeospatial.org/is/15-078r6/15-078r6.html#30).
   4. Create a [Sensor](http://docs.opengeospatial.org/is/15-078r6/15-078r6.html#29).
   5. Create a [Datastream](http://docs.opengeospatial.org/is/15-078r6/15-078r6.html#28) associated to the Thing, the ObservedProperty and the Sensor.
-  6. Create [Observations](http://docs.opengeospatial.org/is/15-078r6/15-078r6.html#31) associated to the Datastream.
+  6. Create a [FeatureOfInterest](http://docs.opengeospatial.org/is/15-078r6/15-078r6.html#32)
+  7. Create [Observations](http://docs.opengeospatial.org/is/15-078r6/15-078r6.html#31) associated to the Datastream and FeatureOfInterest.
 
 If you want to try this yourself make sure that you:
 
@@ -223,14 +224,50 @@ curl -X POST -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d
   "observedArea": null
 }
 ```
-### 6. Create Observations associated to the Datastream.
+### 6. Create a FeatureOfInterest.
+#### Request
+```ssh
+curl -X POST -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d '{
+  "name": "Weather Station YYC.",
+  "description": "This is a weather station located at the Calgary Airport.",
+  "encodingType": "application/vnd.geo+json",
+  "feature": {
+    "type": "Point",
+    "coordinates": [
+      -114.06,
+      51.05
+    ]
+  }
+}' "http://localhost:8080/v1.0/FeaturesOfInterest"
+```
+#### Response
+```ssh
+{
+  "@iot.id": "2",
+  "@iot.selfLink": "http://localhost:8080/v1.0/FeaturesOfInterest(1)",
+  "Observations@iot.navigationLink": "http://localhost:8080/v1.0/FeaturesOfInterest(1)/Observations",
+  "name": "Weather Station YYC.",
+  "description": "This is a weather station located at the Calgary Airport.",
+  "encodingType": "application/vnd.geo+json",
+  "feature": {
+    "type": "Point",
+    "coordinates": [
+      -114.06,
+      51.05
+    ]
+  }
+}
+```
+```
+### 7. Create Observations associated to the Datastream and FeatureOfInterest.
 #### Request
 ```ssh
 curl -X POST -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d '{
   "phenomenonTime": "2016-11-18T11:04:15.790Z",
   "resultTime" : "2016-11-18T11:04:15.790Z",
   "result" : 12.4,
-  "Datastream":{"@iot.id": 1}
+  "Datastream":{"@iot.id": 1},
+  "FeatureOfInterest":{"@iot.id": 2}
 }' "http://localhost:8080/v1.0/Observations"
 ```
 #### Response
@@ -239,7 +276,7 @@ curl -X POST -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d
   "@iot.id": 1,
   "@iot.selfLink": "http://localhost:8080/v1.0/Observations(1)",
   "Datastream@iot.navigationLink": "http://localhost:8080/v1.0/Observations(1)/Datastream",
-  "FeaturesOfInterest@iot.navigationLink": "http://localhost:8080/v1.0/Observations(1)/FeaturesOfInterest",
+  "FeatureOfInterest@iot.navigationLink": "http://localhost:8080/v1.0/Observations(1)/FeaturesOfInterest(2)",
   "phenomenonTime": "2016-11-18T11:04:15.790Z",
   "resultTime": "2016-11-18T11:04:15.790Z",
   "result": 12.4,
@@ -325,7 +362,19 @@ via deep insert, you can send this request:
 curl -X POST -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d '{
   "phenomenonTime": "2016-11-18T11:04:15.790Z",
   "resultTime" : "2016-11-18T11:04:15.790Z",
-  "result" : 12.4
+  "result" : 12.4,
+  "FeatureOfInterest": {
+    "name": "Weather Station YYC.",
+    "description": "This is a weather station located at the Calgary Airport.",
+    "encodingType": "application/vnd.geo+json",
+    "feature": {
+      "type": "Point",
+      "coordinates": [
+        -114.06,
+        51.05
+      ]
+    }
+  }
 }' "http://localhost:8080/v1.0/Datastreams(1)/Observations"
 ```
 

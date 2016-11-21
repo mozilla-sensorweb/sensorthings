@@ -2,6 +2,7 @@ import app           from './server';
 import db            from '../src/models/db';
 import should        from 'should';
 import supertest     from 'supertest';
+import { getModelName } from '../src/utils';
 
 import * as CONST from './constants';
 import * as ERR from '../src/errors';
@@ -39,6 +40,7 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
     return multiples.indexOf(type) > -1;
   }
 
+
   return db().then(models => {
     const associations = models[endpoint].associations;
     let associationsMap = {};
@@ -48,6 +50,50 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
       const modelName = models[associationName] ? associationName : pluralName;
       associationsMap[modelName] = associationName;
     });
+
+    const removeAssociations = (body) => {
+      associatedModels.forEach(model => {
+        Reflect.deleteProperty(body, associationsMap[model]);
+      });
+      return body;
+    };
+
+    const getCountObject = (body, empty) => {
+      let countObject = {};
+      countObject[endpoint] = { count: 1 };
+
+      const alreadyExists = entity => {
+        if (!entity) {
+          return false;
+        }
+        return Object.keys(entity).length === 1 && entity[CONST.iotId];
+      }
+
+      Object.keys(models[endpoint].associations).forEach(association => {
+        const modelName = getModelName(association);
+        // We always create one manually on the test
+        countObject[modelName] = { count: empty ? 0 : 1 };
+        if (body[association]) {
+          if (Array.isArray(body[association])) {
+            body[association].forEach(a => {
+              if (alreadyExists(body[association][a])) {
+                return;
+              }
+              countObject[modelName].count++;
+            });
+            return;
+          }
+
+          if (alreadyExists(body[association])) {
+            return;
+          }
+
+          countObject[modelName].count++;
+        }
+
+      });
+      return countObject;
+    }
 
     const associatedModels = Object.keys(associationsMap);
     let patchError, patchSuccess, postError, postSuccess;
@@ -89,8 +135,9 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
             const relations = {};
             associatedModels.forEach(modelName => {
               const associationName = associationsMap[modelName];
+              const assocEntity = CONST[modelName + 'Entity'];
               relations[associationName] = relations[associationName] || [];
-              relations[associationName].push(CONST[modelName + 'Entity']);
+              relations[associationName].push(assocEntity);
             });
 
             const instance = Object.assign({}, testEntity, relations);
@@ -362,16 +409,21 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
                 return Promise.resolve(resultObject);
               });
             })).then(results => {
-              const primary = results[0][endpoint];
-              const instance = primary.rows[0];
-              instance.id.should.be.equal(res.body[CONST.iotId]);
-              mandatory.forEach(property => {
-                instance[property].should.be.deepEqual(testEntity[property]);
-              });
-              Object.keys(results[0]).forEach((result) => {
+              results.forEach((result) => {
+                if (result[endpoint]) {
+                  const instance = result[endpoint].rows[0];
+                  instance.id.should.be.equal(res.body[CONST.iotId]);
+                  mandatory.forEach(property => {
+                    const expectedProperty = testEntity[property];
+                    instance[property].should.be.deepEqual(expectedProperty);
+                  });
+                  return;
+                }
                 // XXX associations.rows
-                const count = expected[result] ? expected[result].count : 0;
-                results[0][result].count.should.be.equal(count);
+                const modelName = Object.keys(result)[0];
+                const currentExpected = expected[modelName];
+                const count = currentExpected ? currentExpected.count : 0;
+                result[modelName].count.should.be.equal(count);
               });
               done();
             });
@@ -403,29 +455,24 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
         });
 
         it('should respond 201 if the ' + endpoint + ' is valid', done => {
-          let countObject = {};
-          countObject[endpoint] = { count: 1 };
-          associatedModels.forEach((association) => {
-            countObject[association] = { count: 0 };
-          });
-          const body = Object.assign({}, testEntity);
+          let body = Object.assign({}, testEntity);
+          const countObject = getCountObject(body, true);
           postSuccess(done, body, countObject);
         });
 
         describe('Relations linking', () => {
-          associatedModels.forEach(name => {
-            beforeEach(done => {
-              // First of all we create an entity NOT associated to the tested
-              // model, so we can check that the responses don't include it (by
-              // checking the expected entity count on the responses);
-              models[name].create(CONST[name + 'Entity']).then(() => {
-                models[name].findAll().then(result => {
-                  result.length.should.be.equal(1);
-                  done();
-                });
-              });
-            });
 
+          beforeEach(done => {
+            // First of all we create an entity NOT associated to the tested
+            // model, so we can check that the responses don't include it (by
+            // checking the expected entity count on the responses);
+            Promise.all(associatedModels.map(name => {
+              const assocEntity = Object.assign({}, CONST[name + 'Entity']);
+              return models[name].create(assocEntity);
+            })).then(() => done());
+          });
+
+          associatedModels.forEach(name => {
             it('should respond 400 if request tries to create a ' +
                 endpoint + ' linked to an unexisting ' + name, done => {
               let body = Object.assign({}, testEntity);
@@ -436,6 +483,17 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
                         ERR.BAD_REQUEST);
             });
 
+            if (associations[associationsMap[name]].mandatory) {
+              it('should respond 400 if request tries to create a ' +
+                  endpoint + ' missing mandatory ' + name, done => {
+                let body = Object.assign({}, testEntity);
+                Reflect.deleteProperty(body, associationsMap[name]);
+                postError(done, body, 400,
+                          ERR.ERRNO_MANDATORY_ASSOCIATION_MISSING,
+                          ERR.BAD_REQUEST);
+              });
+            }
+
             it('should respond 201 if request to link ' + endpoint +
                ' to existing ' + name + ' is valid', done => {
               models[name].create(CONST[name + 'Entity']).then(relation => {
@@ -443,9 +501,8 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
                 body[associationsMap[name]] = {
                   '@iot.id': relation.id
                 };
-                let countObject = {};
-                countObject[endpoint] = { count: 1 };
-                countObject[name] = { count: 1 };
+                const countObject = getCountObject(body);
+                countObject[name].count = 2;
                 postSuccess(done, body, countObject);
               });
             });
@@ -461,9 +518,8 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
                                          '(' + instance.id + ')/' +
                                          endpointAssociation;
                 let body = Object.assign({}, testEntity);
-                let countObject = {};
-                countObject[endpoint] = { count: 1 };
-                countObject[name] = { count: 1 };
+                const countObject = getCountObject(body);
+                countObject[name].count++;
                 postSuccess(done, body, countObject, resourceOverride);
               });
             });
@@ -471,10 +527,12 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
             it('should respond 201 if request to create ' + endpoint +
                ' with related ' + name + ' is valid', done => {
               let body = Object.assign({}, testEntity);
-              body[associationsMap[name]] = CONST[name + 'Entity'];
-              let countObject = {};
-              countObject[endpoint] = { count: 1 };
-              countObject[name] = { count: 1 };
+              let assocEntity = Object.assign({}, CONST[name + 'Entity']);
+              Reflect.deleteProperty(assocEntity, endpoint);
+              Reflect.deleteProperty(assocEntity, CONST.entities[endpoint]);
+              body[associationsMap[name]] = assocEntity;
+
+              const countObject = getCountObject(body);
               postSuccess(done, body, countObject);
             });
 
@@ -495,9 +553,8 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
                 created.forEach(row => {
                   body[associationsMap[name]].push({ '@iot.id': row.id });
                 });
-                let countObject = {};
-                countObject[endpoint] = { count: 1 };
-                countObject[name] = { count: created.length };
+                const countObject = getCountObject(body);
+                countObject[name].count = 3;
                 postSuccess(done, body, countObject);
               });
             });
@@ -511,12 +568,14 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
               }
 
               let body = Object.assign({}, testEntity);
+              let assocEntity = Object.assign({}, CONST[name + 'Entity']);
+              Reflect.deleteProperty(assocEntity, endpoint);
+              Reflect.deleteProperty(assocEntity, CONST.entities[endpoint]);
               body[associationsMap[name]] = [];
-              body[associationsMap[name]].push(CONST[name + 'Entity']);
-              body[associationsMap[name]].push(CONST[name + 'Entity']);
-              let countObject = {};
-              countObject[endpoint] = { count: 1 };
-              countObject[name] = { count: body[associationsMap[name]].length };
+              body[associationsMap[name]].push(assocEntity);
+              body[associationsMap[name]].push(assocEntity);
+              const countObject = getCountObject(body);
+
               postSuccess(done, body, countObject);
             });
 
@@ -668,6 +727,7 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
         it('should respond 200 if request to update a ' +
            'single property of a ' + endpoint + ' is valid', done => {
           const entity = Object.assign({}, testEntity);
+          removeAssociations(entity);
           patchSuccess(done, entity);
         });
 
@@ -677,12 +737,14 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
           mandatory.forEach(field => {
             body[field] = anotherValue(field);
           });
+          removeAssociations(body);
           patchSuccess(done, body, Object.assign({}, testEntity, body));
         });
 
         it('should respond 200 if request to update a ' + endpoint +
            ' tries to update the id', done => {
           const body = Object.assign({}, testEntity, { 'id': 'something' });
+          removeAssociations(body);
           patchSuccess(done, body);
         });
 
@@ -708,6 +770,7 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
             it('should respond 400 if request tries to update a ' + endpoint +
                ' to link it to an unexisting ' + name, done => {
               let body = Object.assign({}, testEntity);
+              removeAssociations(body);
               body[associationsMap[name]] = {
                 '@iot.id': '0'
               };
@@ -718,7 +781,9 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
             it('should respond 400 if request includes related ' +
                'entities as inline content', done => {
               let body = Object.assign({}, testEntity);
-              body[associationsMap[name]] = CONST[name + 'Entity'];
+              removeAssociations(body);
+              const assocEntity = Object.assign({}, CONST[name + 'Entity']);
+              body[associationsMap[name]] = assocEntity;
               patchError(done, body, 400, ERR.ERRNO_INLINE_CONTENT_NOT_ALLOWED,
                          ERR.BAD_REQUEST);
             });
@@ -727,6 +792,7 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
                ' to link it to an existing ' + name + ' is correct', done => {
               const association = associations[associationsMap[name]];
               let body = Object.assign({}, testEntity);
+              removeAssociations(body);
               body[associationsMap[name]] = {
                 '@iot.id': testEntities[name]
               };
@@ -746,6 +812,7 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
                 return done();
               }
               let body = Object.assign({}, testEntity);
+              removeAssociations(body);
               const anotherEntity = Object.assign({}, CONST[name + 'Entity']);
               models[name].create(anotherEntity).then(result => {
                 body[associationsMap[name]] = [{
@@ -773,6 +840,7 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
                 return done();
               }
               let body = Object.assign({}, testEntity);
+              removeAssociations(body);
               body[associationsMap[name]] = [{
                 '@iot.id': testEntities[name]
               }, {
@@ -781,8 +849,8 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
               patchError(done, body, 400, ERR.ERRNO_INVALID_ASSOCIATION,
                          ERR.BAD_REQUEST);
             });
-          })
-        })
+          });
+        });
       });
 
       describe('DELETE /' + endpoint + '(:id)', () => {

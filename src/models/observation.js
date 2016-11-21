@@ -117,7 +117,11 @@ module.exports = (sequelize, DataTypes) => {
     classMethods: {
       associate: db => {
         Observation.belongsTo(db.Datastreams);
+        Observation.associations.Datastream.mandatory = true;
         Observation.belongsTo(db.FeaturesOfInterest);
+        // Issue #137: When creating an Observation without FeatureOfInterest,
+        // we should extract it from Locations
+        Observation.associations.FeatureOfInterest.mandatory = true;
       }
     }
   });
