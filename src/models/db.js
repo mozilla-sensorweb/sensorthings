@@ -89,6 +89,14 @@ module.exports = config => {
     return [hasMany, belongsToMany].indexOf(type) > -1;
   };
 
+  db.getPlural = modelOptions => {
+    let modelName = modelOptions.name.plural;
+    if (modelName === 'FeaturesOfInterests') {
+      return modelOptions.name.singular;
+    }
+    return modelName;
+  }
+
   const applyAssociation = (transaction, model, associationType,
                             associationName, exclude, id, instance,
                             primaryKey) => {
@@ -119,9 +127,53 @@ module.exports = config => {
     });
   };
 
+  const maybeCreateAssociation = (transaction, instance, modelName, entity,
+                                  exclude) => {
+    const relations = db[modelName].associations;
+    if (Object.keys(relations).length <= 0) {
+      // Nothing to link
+      return Promise.resolve(instance);
+    }
+
+    let promises = [];
+    try {
+      Object.keys(relations).forEach(associationName => {
+        const association = relations[associationName];
+        const body = entity[associationName];
+        if (!body) {
+          return;
+        }
+
+        const isList = Array.isArray(body);
+
+        if (isList && !isMultipleAssociation(association.associationType)) {
+          throw Object.create({
+            name: BAD_REQUEST,
+            errno: ERRNO_INVALID_ASSOCIATION,
+            errors: 'Cannot use arrays for this association type'
+          });
+        }
+
+        const relatedEntities = isList ? body : [body];
+        const pluralName = association.options.name.plural;
+        const model = db[associationName] || db[pluralName];
+
+        relatedEntities.forEach(relatedEntity => {
+          promises.push(createAssociation(transaction, instance, model,
+                                          association, relatedEntity,
+                                          exclude));
+        });
+      });
+    } catch(error) {
+      return Promise.reject(error);
+    }
+
+    return Promise.all(promises).then(() => instance);
+  }
+
   // Finds an specific entity, and associates it to the given instance.
-  const createAssociation = (instance, model, association, entity,
-                             transaction, exclude) => {
+  const createAssociation = (transaction, instance, model, association, entity,
+                             exclude) => {
     const singularName = model.options.name.singular;
     const id = entity[iotId];
     const attributes = Object.keys(entity);
@@ -138,7 +190,19 @@ module.exports = config => {
     // sent in a linked entity (even if it also includes @iot.id), we need to
     // create a new instance of the associated entity.
     Reflect.deleteProperty(entity, 'id');
-    return instance['create' + singularName](entity, { transaction });
+    return instance['create' + singularName](entity, { transaction })
+    .then(result => {
+      if (!result) {
+        return Promise.reject({
+          name: BAD_REQUEST,
+          errno: ERRNO_INVALID_ASSOCIATION,
+          errors: 'Could not create entity with body ' + entity
+        });
+      }
+      return maybeCreateAssociation(transaction, result,
+                                    db.getPlural(model.options), entity,
+                                    exclude);
+    });
   }
 
   // Transaction method that links all the associated models in the body
@@ -149,48 +213,8 @@ module.exports = config => {
       return db[modelName].create(entity, {
         transaction
       }).then(instance => {
-        // #62: Use the associations coming from the model in the whole
-        // router. We won't need to define it here then.
-        const relations = db[modelName].associations;
-        if (Object.keys(relations).length <= 0) {
-          // Nothing to link
-          return Promise.resolve(instance);
-        }
-
-        let promises = [];
-        try {
-          Object.keys(relations).forEach(associationName => {
-            const association = relations[associationName];
-            const body = entity[associationName];
-            if (!body) {
-              return;
-            }
-
-            const isList = Array.isArray(body);
-
-            if (isList && !isMultipleAssociation(association.associationType)) {
-              throw Object.create({
-                name: BAD_REQUEST,
-                errno: ERRNO_INVALID_ASSOCIATION,
-                errors: 'Cannot use arrays for this association type'
-              });
-            }
-
-            const relatedEntities = isList ? body : [body];
-            const pluralName = association.options.name.plural;
-            const model = db[associationName] || db[pluralName];
-
-            relatedEntities.forEach(relatedEntity => {
-              promises.push(createAssociation(instance, model, association,
-                                              relatedEntity, transaction,
-                                              exclude));
-            });
-          });
-        } catch(error) {
-          return Promise.reject(error);
-        }
-
-        return Promise.all(promises).then(() => instance);
+        return maybeCreateAssociation(transaction, instance, modelName, entity,
+                                      exclude);
       });
     });
   };

@@ -23,10 +23,14 @@ export const observationsNavigationLink = observations + navigationLink;
 
 export const observedProperty   = 'ObservedProperty';
 export const observedProperties = 'ObservedProperties';
+export const observedPropertyNavitationLink =
+  observedProperty + navigationLink;
 export const observedPropertiesNavigationLink =
   observedProperties + navigationLink;
 
+export const sensor = 'Sensor';
 export const sensors = 'Sensors';
+export const sensorNavigationLink = sensor + navigationLink;
 export const sensorsNavigationLink = sensors + navigationLink;
 
 export const things = 'Things';
