@@ -1,9 +1,22 @@
-language: node_js
-node_js:
-  - "6"
+language: java
+jdk:
+- oraclejdk8
+before_install:
+- java -version
+- wget https://raw.githubusercontent.com/creationix/nvm/v0.31.0/nvm.sh -O ~/.nvm/nvm.sh
+- source ~/.nvm/nvm.sh
+- nvm install 6.9.1
+- npm install
 services:
 - postgresql
 addons:
   postgresql: "9.4"
+before_script:
+- npm run test
+- npm run example &
+script:
+- source ./scripts/OGC_tests/install_tests.sh
+- source ./scripts/preconditions.sh
+- source ./scripts/OGC_tests/launch_tests.sh
 after_success:
 - npm run coverage
