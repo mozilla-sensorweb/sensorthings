@@ -91,9 +91,6 @@ module.exports = config => {
 
   db.getPlural = modelOptions => {
     let modelName = modelOptions.name.plural;
-    if (modelName === 'FeaturesOfInterests') {
-      return modelOptions.name.singular;
-    }
     return modelName;
   }
 

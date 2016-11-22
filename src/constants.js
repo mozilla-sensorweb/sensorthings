@@ -36,16 +36,16 @@ export const sensorsNavigationLink = sensors + navigationLink;
 export const things = 'Things';
 export const thingsNavigationLink = things + navigationLink;
 
-export const entities = [
-  datastreams,
-  featuresOfInterest,
-  historicalLocations,
-  locations,
-  observations,
-  observedProperties,
-  sensors,
-  things
-];
+export const entities = {
+  'Datastreams': 'Datastream',
+  'FeaturesOfInterest': 'FeatureOfInterest',
+  'HistoricalLocations': 'HistoricalLocation',
+  'Locations': 'Location',
+  'Observations': 'Observation',
+  'ObservedProperties': 'ObservedProperty',
+  'Sensors': 'Sensor',
+  'Things': 'Thing'
+};
 
 export const datastreamId = 'DatastreamId';
 export const thingId = 'ThingId';

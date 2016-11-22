@@ -13,7 +13,7 @@ import { entities }  from './constants';
   /*
   * Method that generates a URL regexp with format:
   *
-  * '[/:Resource(n)]n times/FinalResource(id)?/property?/($value | $ref)?
+  * '[/:Resource(n)]n times/FinalResource((id)?/property?/($value) | $ref)?
   *
   * If no FinalEndpoint is provided, it matches any of the available endpoints.
   * This regexp will match with and route the FinalResource path with params
@@ -25,14 +25,32 @@ import { entities }  from './constants';
   */
 
   generate: (version, endpoint) => {
-    const possibleEndpoints = '(?:' + entities.join('|') + ')';
+    let singularAndPlural = [];
+    Object.keys(entities).forEach(entityName => {
+      singularAndPlural.push(entityName, entities[entityName]);
+    });
+    const possibleEndpoints = '(?:' + singularAndPlural.join('|') + ')';
     const previousEndpoints =
       '^\\/' + version + '\\/(?:' + possibleEndpoints + '\\(\\d+\\)\\/)*';
-    const finalEndpoint = endpoint ? endpoint : possibleEndpoints;
-    const id = '(?:\\((\\d+)\\))?';
-    const property = '(?:\\/([a-z]\\w*)(?:\\/(\\$value|\\$ref))?)?'
-    const route = previousEndpoints + finalEndpoint + id + property + '$';
-
+    const endpointPlural = '(?:' + endpoint + '|' + entities[endpoint] + ')';
+    const finalEndpoint = endpoint ? endpointPlural : possibleEndpoints;
+    const id = '(?:\\((\\d+)\\)';
+    const ref = '\\/(\\$ref)';
+    const propertyAndValue = '(?:\\/([a-z]\\w*)(?:\\/(\\$value))?)?)?';
+    const idAndProperty = '(?:' + id + propertyAndValue + ')';
+    const propertyOrRef = '(?:' + idAndProperty + '|' + ref + ')?';
+    const route = previousEndpoints + finalEndpoint + propertyOrRef + '$';
     return new RegExp(route);
   }
+ }
+
+ exports.getModelName = name => {
+    let plural;
+    Object.keys(entities).forEach(modelName => {
+      if (entities[modelName] === name) {
+        plural = modelName;
+        return;
+      }
+    });
+    return plural || name;
  }

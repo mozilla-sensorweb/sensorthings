@@ -11,6 +11,8 @@ import {
   hasOne
 } from '../constants';
 
+import { getModelName } from '../utils';
+
 export default version => {
   return (req, res, next) => {
     // Removes starting and trailing '/' and the version and splits the url
@@ -33,13 +35,15 @@ export default version => {
         const matched = resource && resource.match(/^(\w+)(?:\((\d+)\))?$/);
         let model;
         let id;
+        let associationName;
         if (matched) {
-          model = models[matched[1]];
+          model = models[getModelName(matched[1])];
           id = matched[2];
+          associationName = matched[1];
         } else {
           model = models[resource];
         }
-        return { model, id };
+        return { model, id, associationName };
       };
 
       const verifyAssociations = (resourcesLeft, resource,
@@ -62,11 +66,16 @@ export default version => {
         // Check that the association is possible between the two models.
         const previousModel = previousResource.model;
         const previousId = previousResource.id;
-        const { model, id } = resource;
-        const association = previousModel.associations[model.name];
+        const { model, id, associationName } = resource;
+        const association = previousModel.associations[associationName];
         if (!association) {
           return ERR.ApiError(res, 400, ERR.ERRNO_INVALID_ASSOCIATION,
                               ERR.BAD_REQUEST);
+        }
+
+        const type = association.associationType;
+        if ([hasMany, belongsToMany].indexOf(type) > -1) {
+          return verifyAssociations(resourcesLeft, resource, previousResource);
         }
 
         // Check that the association between the two entities actually exists.
@@ -76,17 +85,19 @@ export default version => {
                                 ERR.NOT_FOUND);
           }
 
-          // If there's no id, we don't need to check any specific association.
-          if (!id) {
-            return verifyAssociations(resourcesLeft, resource,
-                                      previousResource);
-          }
+          const name = model.options.name.singular;
 
-          switch (association.associationType) {
+          switch (type) {
             case hasMany:
             case belongsToMany:
-              return previousEntity['has' + model.options.name.singular](id)
-              .then(isAssociated => {
+              // If there's no id, we don't need to check any specific
+              // association.
+              if (!id) {
+                return verifyAssociations(resourcesLeft, resource,
+                                          previousResource);
+              }
+
+              return previousEntity['has' + name](id).then(isAssociated => {
                 if (!isAssociated) {
                   return ERR.ApiError(res, 404, ERR.ERRNO_RESOURCE_NOT_FOUND,
                                       ERR.NOT_FOUND);
@@ -95,8 +106,8 @@ export default version => {
               });
             case hasOne:
             case belongsTo:
-              return previousEntity['get' + model.name]().then(entity => {
-                if (!entity || entity.id !== id) {
+              return previousEntity['get' + name]().then(entity => {
+                if (!entity) {
                   return ERR.ApiError(res, 404, ERR.ERRNO_RESOURCE_NOT_FOUND,
                                       ERR.NOT_FOUND);
                 }
@@ -105,7 +116,8 @@ export default version => {
               });
             default:
               return ERR.ApiError(res, 500, ERR.ERRNO_INTERNAL_ERROR,
-                                  ERR.INTERNAL_ERROR);
+                                  ERR.INTERNAL_ERROR,
+                                  'Unknown association type');
           }
         }).catch(() => {
           return ERR.ApiError(res, 500, ERR.ERRNO_INTERNAL_ERROR,
