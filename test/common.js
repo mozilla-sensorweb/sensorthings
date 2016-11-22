@@ -39,14 +39,6 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
     return multiples.indexOf(type) > -1;
   }
 
-  const getPlural = function getPlural(entity) {
-    let name = entity.$modelOptions.name.plural;
-    if (name === 'FeaturesOfInterests') {
-      return entity.$modelOptions.name.singular;
-    }
-    return name;
-  }
-
   return db().then(models => {
     const associations = models[endpoint].associations;
     let associationsMap = {};
@@ -620,7 +612,8 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
             });
             Promise.all(promises).then(results => {
               results.forEach(result => {
-                testEntities[getPlural(result)] = result.id
+                testEntities[models.getPlural(result.$modelOptions)] =
+                  result.id;
               });
               done()
             });
