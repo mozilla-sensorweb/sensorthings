@@ -381,6 +381,17 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
 
         describe('Relations linking', () => {
           associatedModels.forEach(name => {
+            beforeEach(done => {
+              // First of all we create an entity NOT associated to the tested
+              // model, so we can check that the responses don't include it.
+              models[name].create(CONST[name + 'Entity']).then(() => {
+                models[name].findAll().then(result => {
+                  result.length.should.be.equal(1);
+                  done();
+                });
+              });
+            });
+
             it('should respond 400 if request tries to create a ' +
                 endpoint + ' linked to an unexisting ' + name, done => {
               let body = Object.assign({}, testEntity);

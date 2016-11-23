@@ -60,8 +60,7 @@ module.exports = function resource(endpoint, exclude, version) {
               // 9.2.5 Usage 5: address to the value of an entity’s property.
               body = instance[property];
             } else if (value === '$ref') {
-              // 9.2.6 Usage 6: address to a navigation property
-              // (navigationLink)
+              // 9.2.7 Usage 7: address to an associationLink
               // XXX Issue #54
             } else {
               // 9.2.4 Usage 4: address to a property of an entity.
@@ -78,8 +77,47 @@ module.exports = function resource(endpoint, exclude, version) {
                                 ERR.NOT_FOUND);
         });
       } else {
+        let include;
+        const lastResource = req.lastResource;
+        if (lastResource) {
+          // lastResource is an object of this form:
+          // {
+          //   model <Sequelize Model>,
+          //   id: <String>
+          // }
+          //
+          // If it is set, we need to query the database to obtain all the
+          // instances of the `endpoint` model that are associated to the
+          // entity defined by lastResource.
+          //
+          // For ex. in a request like
+          // http://localhost:8080/v1.0/Things(1)/Locations
+          // lastResource would be
+          // {
+          //   model: Things,
+          //   id: 1
+          // }
+          //
+          // So we would need to get all Locations associated to the Thing with
+          // id 1.
+          //
+          include = [{
+            model: lastResource.model,
+            where: { id: lastResource.id }
+          }];
+          exclude = exclude.concat([lastResource.model.options.name.plural]);
+        }
+
+        // Here we are implementing two resource path handlers:
+        // 1. If no lastResource is set, we implement 9.2.2 Usage 2: address to
+        //    a collection of entities. For ex.
+        //    http://example.org/v1.0/ObservedProperties
+        // 2. If lastResource is set, we implement 9.2.6 Usage 6: address to a
+        //    navigation property (navigationLink). For ex.
+        //    http://example.org/v1.0/Datastreams(1)/Observations
         models[endpoint].findAll({
-          attributes: { exclude }
+          attributes: { exclude },
+          include
         }).then(instances => {
           const associationModels = associations(models);
           res.status(200).send(response.generate(instances, associationModels,
@@ -96,7 +134,6 @@ module.exports = function resource(endpoint, exclude, version) {
                     req.socket.localPort + '/' + version + '/';
     db().then(models => {
       models.createInstance(endpoint, req.body, exclude).then(instance => {
-        // XXX #13 Response urls should be absolute
         res.location(prepath + endpoint + '(' + instance.id + ')');
         res.status(201).send(response.generate(instance, associations(models),
                                                prepath, exclude));
