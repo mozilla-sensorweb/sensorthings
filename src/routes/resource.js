@@ -55,8 +55,19 @@ module.exports = function resource(endpoint, exclude, version) {
             }
 
             let body = {};
-            body[property] = instance[property];
-            return res.status(200).send(body);
+            const value = req.params[2];
+            if (value === '$value') {
+              // 9.2.5 Usage 5: address to the value of an entity’s property.
+              body = instance[property];
+            } else if (value === '$ref') {
+              // 9.2.6 Usage 6: address to a navigation property
+              // (navigationLink)
+              // XXX Issue #54
+            } else {
+              // 9.2.4 Usage 4: address to a property of an entity.
+              body[property] = instance[property];
+            }
+            return res.status(200).json(body);
           }
 
           const associationModels = associations(models);

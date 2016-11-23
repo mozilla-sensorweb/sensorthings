@@ -212,58 +212,80 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
           });
         });
 
-        describe('Get specific properties', () => {
-          it('should respond 404 getting an invalid property', done => {
-            const path = prepath + endpoint + '(' + instanceId + ')';
-            server.get(path + '/randomProperty')
-            .expect('Content-Type', /json/)
-            .expect(404)
-            .end((err, res) => {
-              should.not.exist(err);
-              res.status.should.be.equal(404);
-              res.body.code.should.be.equal(404);
-              const NOT_FOUND_ERRNO = ERRNOS[ERR.ERRNO_RESOURCE_NOT_FOUND];
-              res.body.errno.should.be.equal(NOT_FOUND_ERRNO);
-              res.body.error.should.be.equal(ERRORS[ERR.NOT_FOUND]);
-              done();
-            });
-          });
-
-          mandatory.concat(optional).forEach(property => {
-            it('should return only 1 field when getting ' + property, done => {
-              const path = prepath + endpoint + '(' + instanceId + ')';
-              server.get(path + '/' + property)
-              .expect(200)
+        [false,
+         true].forEach(withValue => {
+          describe('Get specific properties' +
+                   (withValue ? ' with value' : ''), () => {
+            it('should respond 404 getting an invalid property', done => {
+              let path = prepath + endpoint + '(' + instanceId +
+                           ')/randomProperty';
+              if (withValue) {
+                path += '/$value';
+              }
+              server.get(path)
+              .expect('Content-Type', /json/)
+              .expect(404)
               .end((err, res) => {
                 should.not.exist(err);
-                res.status.should.be.equal(200);
-                Object.keys(res.body).length.should.be.equal(1);
-                res.body[property].should.be.deepEqual(testEntity[property]);
+                res.status.should.be.equal(404);
+                res.body.code.should.be.equal(404);
+                const NOT_FOUND_ERRNO = ERRNOS[ERR.ERRNO_RESOURCE_NOT_FOUND];
+                res.body.errno.should.be.equal(NOT_FOUND_ERRNO);
+                res.body.error.should.be.equal(ERRORS[ERR.NOT_FOUND]);
                 done();
               });
             });
-          });
 
-          optional.forEach(property => {
-            it('should return 204 when getting a empty ' + property, done => {
-              const path = prepath + endpoint + '(' + instanceId + ')';
-              let updateProperty = {};
-              updateProperty[property] = null;
-              models[endpoint].update(updateProperty, {
-                where: { id: instanceId }
-              }).then(() => {
-                server.get(path + '/' + property)
-                .expect(204)
+            mandatory.concat(optional).forEach(property => {
+              it('should return only 1 field when getting ' + property,
+                 done => {
+                let path = prepath + endpoint + '(' + instanceId + ')/' +
+                             property;
+                if (withValue) {
+                  path += '/$value';
+                }
+                server.get(path)
+                .expect(200)
+                .expect('Content-Type', /json/)
                 .end((err, res) => {
                   should.not.exist(err);
-                  res.status.should.be.equal(204);
-                  res.body.should.be.empty();
+                  res.status.should.be.equal(200);
+                  if (withValue) {
+                    res.body.should.be.deepEqual(testEntity[property]);
+                  } else {
+                    res.body[property].should.be.deepEqual(
+                      testEntity[property]);
+                  }
                   done();
                 });
-              })
+              });
             });
-          });
-        })
+
+            optional.forEach(property => {
+              it('should return 204 when getting a empty ' + property, done => {
+                let path = prepath + endpoint + '(' + instanceId + ')/' +
+                           property;
+                let updateProperty = {};
+                updateProperty[property] = null;
+                models[endpoint].update(updateProperty, {
+                  where: { id: instanceId }
+                }).then(() => {
+                  if (withValue) {
+                    path += '/$value';
+                  }
+                  server.get(path)
+                  .expect(204)
+                  .end((err, res) => {
+                    should.not.exist(err);
+                    res.status.should.be.equal(204);
+                    res.body.should.be.empty();
+                    done();
+                  });
+                })
+              });
+            });
+          })
+        });
       });
 
       describe('POST /' + endpoint, () => {
