@@ -102,17 +102,5 @@ module.exports = Object.assign({}, testConstants, {
       property2: 'it glows in the dark',
       property3: 'it repels insects'
     }
-  },
-  // Services MAY implicitly delete or modify related entities if required by
-  // integrity constraints.
-  // Table 25 of the spec listed SensorThings API’s integrity constraints
-  // when deleting an entity.
-  integrityConstraints: {
-    'Things': 'Datastreams',
-    'Locations': 'HistoricalLocations',
-    'Datastreams': 'Observations',
-    'Sensors': 'Datastreams',
-    'ObservedProperties': 'Datastreams',
-    'FeaturesOfInterests': 'Observations'
   }
 });

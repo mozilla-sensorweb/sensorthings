@@ -1,7 +1,7 @@
 /* Any copyright is dedicated to the Public Domain.
  * http://creativecommons.org/publicdomain/zero/1.0/ */
 
-/* global before */
+/* global after, before */
 
 'use strict';
 
@@ -14,8 +14,10 @@ import {
   datastreams,
   datastreamsNavigationLink,
   iotCount,
+  iotId,
   locations,
   locationsNavigationLink,
+  observations,
   observationTypes,
   observedProperties,
   sensors,
@@ -40,10 +42,13 @@ db().then(models => {
   const prepath = '/v1.0/';
   const serverUrl = 'http://127.0.0.1:8001';
   describe('Deep insert', () => {
+    let thingId;
+
     before(done => {
       let promises = [];
       [datastreams,
        locations,
+       observations,
        observedProperties,
        sensors,
        things].forEach(model => {
@@ -110,8 +115,33 @@ db().then(models => {
         server.post(prepath + things).send(body)
         .expect('Content-Type', /json/)
         .expect(201)
-        .end(err => {
+        .end((err, res) => {
           should.not.exist(err);
+          thingId = res.body[iotId];
+          done();
+        });
+      });
+    });
+
+    after(done => {
+      // Make sure that "deep" deletion also works by deleting
+      // the recently inserted Thing. It should delete all associated
+      // Datastreams and all associated Observations.
+      server.delete(prepath + things + '(' + thingId + ')')
+      .expect(204)
+      .end(err => {
+        should.not.exist(err);
+        fetch(prepath + things).then(res => {
+          // There should be no Things.
+          res.body[iotCount].should.be.equal(0);
+          return fetch(prepath + datastreams);
+        }).then(res => {
+          // There should be no Datastreams.
+          res.body[iotCount].should.be.equal(0);
+          return fetch(prepath + observations);
+        }).then(res => {
+          // There should be no Observations.
+          res.body[iotCount].should.be.equal(0);
           done();
         });
       });

@@ -796,7 +796,7 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
         });
 
         describe('Integrity constraints', () => {
-          const linkedModel = CONST.integrityConstraints[endpoint];
+          const linkedModel = CONST.integrityConstrains[endpoint];
           if (!linkedModel) {
             return;
           }
@@ -810,8 +810,7 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
             });
           });
 
-          // XXX Issue 70 Enforce integrity constraints when deleting an entity
-          xit('should delete all ' + linkedModel + ' entities linked to the ' +
+          it('should delete all ' + linkedModel + ' entities linked to the ' +
              endpoint + ' entity being deleted', done => {
             let model;
             model = models[linkedModel];

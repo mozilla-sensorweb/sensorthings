@@ -13,6 +13,7 @@ import {
   belongsToMany,
   hasMany,
   hasOne,
+  integrityConstrains,
   iotId
 } from '../constants';
 
@@ -308,6 +309,46 @@ module.exports = config => {
           return Promise.all(promises).then(() => instance);
         });
       });
+    });
+  };
+
+  const deleteInstance = (transaction, model, id) => {
+    const constrain = integrityConstrains[db.getPlural(model.options)];
+    // We start from the bottom, removing the entities associated to the
+    // instance to be deleted as enforced by the integrity constrains
+    // defined on the Table 25 from 10.4 Delete an entity
+    // http://docs.opengeospatial.org/is/15-078r6/15-078r6.html#68
+    let promises = [];
+    Object.keys(model.associations).forEach(key => {
+      const association = model.associations[key];
+      if (constrain && db.getPlural(association.options) === constrain) {
+        promises.push(association.target.findAll({
+          include: [{
+            model,
+            where: { id }
+          }]
+        }).then(results => {
+          if (!results || !results.length) {
+            return Promise.resolve();
+          }
+          let morePromises = [];
+          results.forEach(result => {
+            morePromises.push(
+              deleteInstance(transaction, association.target, result.id)
+            );
+          });
+          return Promise.all(morePromises);
+        }));
+      }
+    });
+    return Promise.all(promises).then(() => {
+      return model.destroy({ where: { id } });
+    });
+  };
+
+  db.deleteInstance = (model, id) => {
+    return db.sequelize.transaction(transaction => {
+      return deleteInstance(transaction, model, id);
     });
   };
 
