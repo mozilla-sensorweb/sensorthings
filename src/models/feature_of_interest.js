@@ -87,6 +87,10 @@ module.exports = (sequelize, DataTypes) => {
           };
         }
       }
+    },
+    name: {
+      plural: 'FeaturesOfInterest',
+      singular: 'FeatureOfInterest'
     }
   });
 

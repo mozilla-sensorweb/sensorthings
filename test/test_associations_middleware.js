@@ -5,10 +5,11 @@
 
 'use strict';
 
-import app           from './server';
-import db            from '../src/models/db';
-import should        from 'should';
-import supertest     from 'supertest';
+import app              from './server';
+import db               from '../src/models/db';
+import should           from 'should';
+import supertest        from 'supertest';
+import { getModelName } from '../src/utils'
 
 import * as CONST from './constants';
 import * as ERR   from '../src/errors';
@@ -17,14 +18,10 @@ const ERRORS   = ERR.errors;
 const ERRNOS   = ERR.errnos;
 const entities = CONST.entities;
 
-const server = supertest.agent(app);
-
+const port = 8090;
+const server = supertest.agent(app.listen(port));
 const prepath = '/v1.0/';
-
-const getPlural = plural => {
-  return (plural === 'FeaturesOfInterests') ? CONST.featuresOfInterest
-                                            : plural;
-};
+const fullPrepath      = 'http://127.0.0.1:' + port + prepath;
 
 const getError = (done, endpoint, code, errno, error) => {
   server.get(prepath + endpoint)
@@ -41,11 +38,15 @@ const getError = (done, endpoint, code, errno, error) => {
 }
 
 db().then(models => {
+
   let noAssociations = {};
-  entities.forEach(entity => {
+  Object.keys(entities).forEach(entity => {
     noAssociations[entity] = [];
     const associations = models[entity].associations;
-    entities.forEach(entity_ => {
+    const singularEntities = Object.keys(entities).map(plural => {
+      return entities[plural]
+    });
+    Object.keys(entities).concat(singularEntities).forEach(entity_ => {
       if (!associations[entity_] && entity !== entity_) {
         noAssociations[entity].push(entity_);
       }
@@ -54,7 +55,7 @@ db().then(models => {
 
   describe('Associations', () => {
     describe('Invalid associations', () => {
-      entities.forEach(model => {
+      Object.keys(entities).forEach(model => {
         noAssociations[model].forEach(anotherModel => {
           const endpoint = model + '(1)/' + anotherModel;
           it('GET ' + endpoint + ' should respond 400 errno 102 ' +
@@ -67,86 +68,154 @@ db().then(models => {
     });
 
     describe('Valid associations but not found entity', () => {
-      entities.forEach(model => {
-        Object.keys(models[model].associations).forEach(association => {
-          const endpoint = model + '(1)/' + association;
-          // XXX Issues #18, #22 and #23.
-          const notImplemented = [
-            'Datastreams',
-            'HistoricalLocations',
-            'Observations'
-          ];
-          const test = (
-            notImplemented.indexOf(model) === -1 &&
-            notImplemented.indexOf(association) === -1
-          ) ? it : xit;
-          test('GET ' + endpoint + ' should respond 404 errno 404 ' +
-             'RESOURCE_NOT_FOUND', done => {
-            getError(done, endpoint, 404, ERRNOS[ERR.ERRNO_RESOURCE_NOT_FOUND],
-                     ERRORS[ERR.NOT_FOUND]);
+      let ids = {};
+      beforeEach(done => {
+        const promises = Object.keys(entities).map(modelName => {
+          return models[modelName].destroy({ where: {} }).then(() => {
+            const entity = Object.assign({}, CONST[modelName + 'Entity']);
+            return models[modelName].create(entity);
+          }).then(result => {
+            ids[modelName] = result.id;
           });
+        });
+        Promise.all(promises).then(() => {
+          done();
+        });
+      });
+
+      Object.keys(entities).forEach(model => {
+        Object.keys(models[model].associations).forEach(association => {
+          let endpoint = model + '(id)/' + association;
+          switch (models[model].associations[association].associationType) {
+            case 'HasMany':
+            case 'BelongsToMany':
+              it('GET ' + endpoint + ' should respond 200 with an empty array ',
+                 done => {
+                endpoint = endpoint.replace('id', ids[model]);
+                server.get(prepath + endpoint)
+                .expect('Content-Type', /json/)
+                .expect(200)
+                .end((err, res) => {
+                  should.not.exist(err);
+                  res.status.should.be.equal(200);
+                  res.body['@iot.count'].should.be.equal(0);
+                  res.body.value.should.be.deepEqual([]);
+                  done();
+                });
+              });
+            break;
+
+            case 'HasOne':
+            case 'BelongsTo':
+              it('GET ' + endpoint + ' should respond 404 errno 404 ' +
+                 'RESOURCE_NOT_FOUND', done => {
+                endpoint = endpoint.replace('id', ids[model]);
+                const NOT_FOUND_ERRNO = ERRNOS[ERR.ERRNO_RESOURCE_NOT_FOUND];
+                getError(done, endpoint, 404, NOT_FOUND_ERRNO,
+                         ERRORS[ERR.NOT_FOUND]);
+              });
+            break;
+            default:
+              throw new Error('Something went wrong. Invalid association');
+          }
         });
       });
     });
 
-    let describePromises = [];
-    entities.forEach(modelName => {
-      describePromises.push(new Promise(resolve => {
-         // XXX Issues #18, #22 and #23.
-        if ([
-          'Datastreams',
-          'HistoricalLocations',
-          'Observations'
-        ].indexOf(modelName) !== -1) {
-          return resolve();
-        }
-
-        const testEntity = CONST[modelName + 'Entity'];
-        const model = models[modelName];
-        const endpoints = [];
-
-        let promises = [];
-        promises.push(model.destroy({ where: {} }));
-        Object.keys(model.associations).forEach(associationName => {
-          const association = model.associations[associationName];
-          promises.push(models[association.as].destroy({ where: { } }));
+    describe('Valid associations and found entity', () => {
+      let instances = {};
+      beforeEach(done => {
+        const promises = Object.keys(entities).map(modelName => {
+          const entity = Object.assign({}, CONST[modelName + 'Entity']);
+          const associations = Object.keys(models[modelName].associations);
+          associations.forEach(association => {
+            const assocModelName = getModelName(association);
+            const assocEntity = CONST[assocModelName + 'Entity'];
+            entity[association] = Object.assign({}, assocEntity);
+          });
+          return models[modelName].create(entity, {
+            include: associations.map(name => {
+              return models[getModelName(name)];
+            })
+          }).then(result => {
+            instances[modelName] = result;
+          });
         });
         Promise.all(promises).then(() => {
-          promises = [];
-          promises.push(model.create(testEntity));
-          Object.keys(model.associations).forEach(associationName => {
-            const association = model.associations[associationName];
-            const otherModel = association.as;
-            const otherEntity = CONST[otherModel + 'Entity'];
-            promises.push(models[otherModel].create(otherEntity));
-          });
-          return Promise.all(promises);
-        }).then(results => {
-          let plural = getPlural(results[0].$modelOptions.name.plural);
-          let url = plural + '(' + results[0].id + ')/';
-          for (let i = 1; i < results.length; i++) {
-            const name = getPlural(results[i].$modelOptions.name.plural);
-            endpoints.push(url + name + '(' + results[i].id + ')');
-          }
-
-          endpoints.forEach(endpoint => {
-            describe('Models association is valid and entities exist but ' +
-                     'they are not associated', () => {
-              it('GET ' + endpoint + ' should respond 404 NOT_FOUND', done => {
-                getError(done, endpoint, 404,
-                         ERRNOS[ERR.ERRNO_RESOURCE_NOT_FOUND],
-                         ERRORS[ERR.NOT_FOUND]);
-              });
-            });
-          });
-
-          resolve();
+          done();
         });
-      }));
-    });
+      });
 
-    // Using --delay and run() allows us to build a suite that is the result of
-    // an asynchronous computation like getting the models from the db.
-    Promise.all(describePromises).then(run);
+      Object.keys(entities).forEach(model => {
+        Object.keys(models[model].associations).forEach(association => {
+          let endpoint = model + '(id)/' + association;
+          switch (models[model].associations[association].associationType) {
+            case 'HasMany':
+            case 'BelongsToMany':
+              it('GET ' + endpoint + ' should respond 200 with 1 result ',
+                 done => {
+                endpoint = endpoint.replace('id', instances[model].id);
+                server.get(prepath + endpoint)
+                .expect('Content-Type', /json/)
+                .expect(200)
+                .end((err, res) => {
+                  instances[model]['get' + association]().then(associated => {
+                    const id = associated[0].id;
+                    should.not.exist(err);
+                    res.status.should.be.equal(200);
+                    res.body[CONST.iotCount].should.be.equal(1);
+                    res.body.value.should.be.instanceof(Array);
+                    res.body.value.should.have.lengthOf(1);
+                    res.body.value.forEach(value => {
+                      value[CONST.iotId].should.be.equal(id);
+                      const modelName = getModelName(association);
+                      const selfLink = fullPrepath + modelName + '(' + id + ')';
+                      value[CONST.iotSelfLink].should.be.equal(selfLink);
+                    });
+                    done();
+                  });
+                });
+              });
+            break;
+
+            case 'HasOne':
+            case 'BelongsTo':
+              it('GET ' + endpoint + ' should respond 200 with the ' +
+                 'associated entity', done => {
+                endpoint = endpoint.replace('id', instances[model].id);
+                server.get(prepath + endpoint)
+                .expect('Content-Type', /json/)
+                .expect(200)
+                .end((err, res) => {
+                  instances[model]['get' + association]().then(associated => {
+                    const id = associated.id;
+                    const path = getModelName(association) + '(' + id + ')';
+                    should.not.exist(err);
+                    res.status.should.be.equal(200);
+                    should.not.exist(res.body[CONST.iotCount]);
+                    res.body[CONST.iotSelfLink].should.be.equal(fullPrepath +
+                                                                path);
+                    res.body[CONST.iotId].should.be.equal(id);
+                    const associationModel = models[getModelName(association)];
+                    Object.keys(associationModel.associations).forEach(name => {
+                      const navLink = name + CONST.navigationLink;
+                      res.body[navLink].should.be.equal(fullPrepath +
+                                                        path + '/' + name);
+                    });
+                    done();
+                  });
+                });
+              });
+            break;
+            default:
+              throw new Error('Something went wrong. Invalid association');
+          }
+        });
+      });
+
+      // Using --delay and run() allows us to build a suite that is the result
+      // of an asynchronous computation like getting the models from the db.
+      run();
+    });
   });
 });

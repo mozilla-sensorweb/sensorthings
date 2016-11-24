@@ -49,7 +49,7 @@ router.get('/', (req, res) => {
   const prepath = req.protocol + '://' + req.hostname + ':' +
                   req.socket.localPort + req.baseUrl + '/';
 
-  const value = entities.map(key => {
+  const value = Object.keys(entities).map(key => {
     return {
       'name'  : key,
       'url'   : prepath + key

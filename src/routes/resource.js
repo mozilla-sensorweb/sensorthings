@@ -1,6 +1,7 @@
-import db         from '../models/db';
-import express    from 'express';
-import response   from '../response';
+import db           from '../models/db';
+import express      from 'express';
+import response     from '../response';
+import { entities } from '../constants';
 
 import * as ERR   from '../errors';
 
@@ -119,7 +120,17 @@ module.exports = function resource(endpoint, exclude, version) {
           attributes: { exclude },
           include
         }).then(instances => {
+          const singularName = entities[endpoint];
           const associationModels = associations(models);
+          if (lastResource && lastResource.model.associations[singularName]) {
+            // If the association with the singular name exists, it means
+            // that is a single association
+            return res.status(200).send(response.generate(instances[0],
+                                                          associationModels,
+                                                          prepath,
+                                                          exclude));
+          }
+
           res.status(200).send(response.generate(instances, associationModels,
                                                  prepath, exclude));
         });
