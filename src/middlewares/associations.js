@@ -98,7 +98,11 @@ export default version => {
               }
 
               return previousEntity['has' + name](id).then(isAssociated => {
-                if (!isAssociated) {
+                // Unless we are checking the last resource of a POST request
+                // (i.e. 'Thing' in POST v1.0/Datastreams(34)/Thing)
+                // if it's not associated, we throw a 404.
+                if (!isAssociated && req.method !== 'POST' &&
+                    !resourcesLeft.length) {
                   return ERR.ApiError(res, 404, ERR.ERRNO_RESOURCE_NOT_FOUND,
                                       ERR.NOT_FOUND);
                 }
@@ -107,7 +111,10 @@ export default version => {
             case hasOne:
             case belongsTo:
               return previousEntity['get' + name]().then(entity => {
-                if (!entity) {
+                // Unless we are checking the last resource of a POST request
+                // (i.e. 'Thing' in POST v1.0/Datastreams(34)/Thing)
+                // if it's not associated, we throw a 404.
+                if (!entity && req.method !== 'POST' && !resourcesLeft.length) {
                   return ERR.ApiError(res, 404, ERR.ERRNO_RESOURCE_NOT_FOUND,
                                       ERR.NOT_FOUND);
                 }
@@ -119,9 +126,9 @@ export default version => {
                                   ERR.INTERNAL_ERROR,
                                   'Unknown association type');
           }
-        }).catch(() => {
+        }).catch(error => {
           return ERR.ApiError(res, 500, ERR.ERRNO_INTERNAL_ERROR,
-                              ERR.INTERNAL_ERROR);
+                              ERR.INTERNAL_ERROR, error);
         });
       };
 

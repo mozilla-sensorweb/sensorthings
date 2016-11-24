@@ -305,8 +305,8 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
           });
         };
 
-        postSuccess = (done, body, expected) => {
-          server.post(resource).send(body)
+        postSuccess = (done, body, expected, resourceOverride) => {
+          server.post(resourceOverride || resource).send(body)
           .expect('Content-Type', /json/)
           .expect(201)
           .end((err, res) => {
@@ -383,7 +383,8 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
           associatedModels.forEach(name => {
             beforeEach(done => {
               // First of all we create an entity NOT associated to the tested
-              // model, so we can check that the responses don't include it.
+              // model, so we can check that the responses don't include it (by
+              // checking the expected entity count on the responses);
               models[name].create(CONST[name + 'Entity']).then(() => {
                 models[name].findAll().then(result => {
                   result.length.should.be.equal(1);
@@ -413,6 +414,24 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
                 countObject[endpoint] = { count: 1 };
                 countObject[name] = { count: 1 };
                 postSuccess(done, body, countObject);
+              });
+            });
+
+            it('should respond 201 if request to link ' + endpoint +
+               ' to existing ' + name + ' by URL is valid', done => {
+              models[name].create(CONST[name + 'Entity'])
+              .then(instance => {
+                let endpointAssociation = models[name].associations[endpoint] ?
+                  endpoint :
+                  CONST.entities[endpoint];
+                const resourceOverride = prepath + name +
+                                         '(' + instance.id + ')/' +
+                                         endpointAssociation;
+                let body = Object.assign({}, testEntity);
+                let countObject = {};
+                countObject[endpoint] = { count: 1 };
+                countObject[name] = { count: 1 };
+                postSuccess(done, body, countObject, resourceOverride);
               });
             });
 
