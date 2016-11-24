@@ -172,9 +172,7 @@ module.exports = function resource(endpoint, exclude, version) {
     }
 
     db().then(models => {
-      models[endpoint].destroy({
-        where: { id: req.params[0] }
-      }).then(count => {
+      models.deleteInstance(models[endpoint], req.params[0]).then(count => {
         if (!count) {
           return ERR.ApiError(res, 404, ERR.ERRNO_RESOURCE_NOT_FOUND,
                               ERR.NOT_FOUND);

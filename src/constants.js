@@ -97,3 +97,16 @@ export const hasMany = 'HasMany';
 export const hasOne = 'HasOne';
 export const belongsTo = 'BelongsTo';
 export const belongsToMany = 'BelongsToMany';
+
+// Services MAY implicitly delete or modify related entities if required by
+// integrity constraints.
+// Table 25 of the spec listed SensorThings API’s integrity constraints
+// when deleting an entity.
+export const integrityConstrains = {
+  'Things': 'Datastreams',
+  'Locations': 'HistoricalLocations',
+  'Datastreams': 'Observations',
+  'Sensors': 'Datastreams',
+  'ObservedProperties': 'Datastreams',
+  'FeaturesOfInterest': 'Observations'
+};
