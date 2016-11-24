@@ -8,6 +8,7 @@ Node implementation of the OGC SensorThings API.
 # Dependencies
 * Nodejs 6
 * PostgreSQL >9.4
+* PostGIS
 
 # Build
 ```shell
@@ -29,7 +30,7 @@ const config = {
     port: 5432,
     name: 'sensorweb',
     user: 'postgres',
-    pass: '12345678'
+    password: '12345678'
   }
 };
 
