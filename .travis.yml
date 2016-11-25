@@ -1,6 +1,13 @@
 language: java
 jdk:
 - oraclejdk8
+env:
+  matrix:
+   - TESTS=OGC_TESTS
+   - TESTS=API
+matrix:
+  allow_failures:
+     - env: TESTS=OGC_TESTS
 before_install:
 - java -version
 - wget https://raw.githubusercontent.com/creationix/nvm/v0.31.0/nvm.sh -O ~/.nvm/nvm.sh
@@ -12,11 +19,11 @@ services:
 addons:
   postgresql: "9.4"
 before_script:
-- npm run test
-- npm run example &
+- if [[ "$TESTS" = "API" ]]; then npm run test; fi
+- if [[ "$TESTS" = "OGC_TESTS" ]]; then npm run example & fi
 script:
-- source ./scripts/OGC_tests/install_tests.sh
-- source ./scripts/preconditions.sh
-- source ./scripts/OGC_tests/launch_tests.sh
+- if [[ "$TESTS" = "OGC_TESTS" ]]; then source ./scripts/OGC_tests/install_tests.sh ; fi
+- if [[ "$TESTS" = "OGC_TESTS" ]]; then source ./scripts/preconditions.sh ; fi
+- if [[ "$TESTS" = "OGC_TESTS" ]]; then source ./scripts/OGC_tests/launch_tests.sh ; fi
 after_success:
-- npm run coverage
+- if [[ "$TESTS" = "API" ]]; then npm run coverage ; fi
