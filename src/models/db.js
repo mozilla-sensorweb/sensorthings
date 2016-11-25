@@ -54,9 +54,9 @@ module.exports = config => {
 
   state = INITIALIZING;
 
-  const { name, user, pass, host, port } = config;
+  const { name, user, password, host, port } = config;
 
-  const sequelize = new Sequelize(name, user, pass, {
+  const sequelize = new Sequelize(name, user, password, {
     host,
     port,
     dialect: 'postgres',
@@ -493,5 +493,6 @@ module.exports = config => {
     while (deferreds.length) {
       deferreds.pop().reject(err);
     }
+    throw err;
   });
 };
