@@ -144,7 +144,7 @@ module.exports = function resource(endpoint, exclude, version) {
     const prepath = req.protocol + '://' + req.hostname + ':' +
                     req.socket.localPort + '/' + version + '/';
     db().then(models => {
-      models.createInstance(endpoint, req.body, exclude).then(instance => {
+      models.createInstance(endpoint, req, exclude).then(instance => {
         res.location(prepath + endpoint + '(' + instance.id + ')');
         res.status(201).send(response.generate(instance, associations(models),
                                                prepath, exclude));
