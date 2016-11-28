@@ -4,6 +4,7 @@
 
 export const navigationLink = '@iot.navigationLink';
 
+export const datastream = 'Datastream';
 export const datastreams = 'Datastreams';
 export const datastreamsNavigationLink = datastreams + navigationLink;
 
@@ -51,7 +52,7 @@ export const datastreamId = 'DatastreamId';
 export const thingId = 'ThingId';
 export const sensorId = 'SensorId';
 export const observedPropertyId = 'ObservedPropertyId';
-export const featuresOfInterestId = 'FeaturesOfInterestId';
+export const featureOfInterestId = 'FeatureOfInterestId';
 
 export const createdAt = 'createdAt';
 export const updatedAt = 'updatedAt';
@@ -62,7 +63,8 @@ export const excludedFields = {
   'FeaturesOfInterest': commonExcludedFields,
   'HistoricalLocations': commonExcludedFields.concat([thingId]),
   'Locations': commonExcludedFields,
-  'Observations': commonExcludedFields.concat([featuresOfInterestId,
+  'Observations': commonExcludedFields.concat([featureOfInterestId,
+                                               datastream,
                                                datastreamId]),
   'ObservedProperties': commonExcludedFields,
   'Sensors': commonExcludedFields,
