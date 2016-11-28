@@ -8,6 +8,7 @@ import { snake } from 'case';
 
 // Middlewares
 import associations from './middlewares/associations';
+import queryParser from './middlewares/query_parser';
 
 // Models
 import db from './models/db';
@@ -37,7 +38,9 @@ module.exports = (config) => {
 
   router.use('/' + version + '/', baseRouter);
 
-  router.use(route.generate(version), associations(version));
+  const routeExpr = route.generate(version);
+  router.use(routeExpr, associations(version));
+  router.use(routeExpr, queryParser);
 
   Object.keys(entities).forEach(endpoint => {
     router.use(route.generate(version, endpoint),
