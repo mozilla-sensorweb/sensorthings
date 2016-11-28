@@ -5,6 +5,10 @@
 
 Node implementation of the OGC SensorThings API.
 
+# Dependencies
+* Nodejs 6
+* PostgreSQL >9.4
+
 # Build
 ```shell
 npm install
