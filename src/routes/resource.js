@@ -141,6 +141,11 @@ module.exports = function resource(endpoint, exclude, version) {
   });
 
   router.post('/', (req, res) => {
+    if (req.params && req.params[0]) {
+      return ERR.ApiError(res, 400, ERR.ERRNO_BAD_REQUEST, ERR.BAD_REQUEST,
+                          'Ids are not allowed on POST requests');
+    }
+
     const prepath = req.protocol + '://' + req.hostname + ':' +
                     req.socket.localPort + '/' + version + '/';
     db().then(models => {
