@@ -291,8 +291,8 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
       describe('POST /' + endpoint, () => {
         const resource = prepath + endpoint;
 
-        postError = (done, body, code, errno, error) => {
-          server.post(resource).send(body)
+        postError = (done, body, code, errno, error, id) => {
+          server.post(id ? resource + '(' + id + ')' : resource).send(body)
           .expect('Content-Type', /json/)
           .expect(code)
           .end((err, res) => {
@@ -367,6 +367,12 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
             postError(done, body, 400, ERR.ERRNO_VALIDATION_ERROR,
                       ERR.BAD_REQUEST);
           });
+        });
+
+        it('should respond 400 if POST request contains id', done => {
+          const body = Object.assign({}, testEntity);
+          postError(done, body, 400, ERR.ERRNO_BAD_REQUEST, ERR.BAD_REQUEST,
+                    '1');
         });
 
         it('should respond 201 if the ' + endpoint + ' is valid', done => {
