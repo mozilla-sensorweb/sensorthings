@@ -150,7 +150,11 @@ module.exports = config => {
     Reflect.deleteProperty(associatedEntity, 'id');
     return instance[association.accessors.create](
       associatedEntity, { transaction }
-    ).then(associatedInstance => {
+    ).then(function onAssociationCreated() {
+      // The Promise here resolves with `instance` which is not the associated
+      // instance that we just created and that we need to continue looking
+      // for deeper associations.
+      const associatedInstance = this;
       if (!associatedInstance) {
         return Promise.reject({
           name: BAD_REQUEST,
