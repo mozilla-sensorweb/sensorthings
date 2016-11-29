@@ -6,7 +6,8 @@ const errnos = {
   ERRNO_VALIDATION_ERROR            : 100,
   ERRNO_MALFORMED_URL               : 101,
   ERRNO_INVALID_ASSOCIATION         : 102,
-  ERRNO_INLINE_CONTENT_NOT_ALLOWED  : 103
+  ERRNO_INLINE_CONTENT_NOT_ALLOWED  : 103,
+  ERRNO_INVALID_QUERY_STRING        : 104
 };
 
 exports.errnos = errnos;

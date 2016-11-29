@@ -8,7 +8,30 @@ import { entities }  from './constants';
  * Module with utility shared methods
  */
 
- exports.route = {
+const pluralNames = Object.keys(entities);
+const singularNames = pluralNames.map(entityName => {
+  return entities[entityName];
+});
+
+let singularAndPlural = [];
+pluralNames.forEach(entityName => {
+  singularAndPlural.push(entityName, entities[entityName]);
+});
+
+
+const noCapture = (pattern) => {
+  return '(?:' + pattern + ')';
+};
+
+const separateBy = (char, pattern) => {
+  return noCapture('(?:' + pattern + char + ')*' +
+         noCapture(pattern));
+};
+
+const possibleEndpoints = noCapture(singularAndPlural.join('|'));
+
+const route = {
+  pathToModel: separateBy('\\/', possibleEndpoints),
 
   /*
   * Method that generates a URL regexp with format:
@@ -25,32 +48,51 @@ import { entities }  from './constants';
   */
 
   generate: (version, endpoint) => {
-    let singularAndPlural = [];
-    Object.keys(entities).forEach(entityName => {
-      singularAndPlural.push(entityName, entities[entityName]);
-    });
-    const possibleEndpoints = '(?:' + singularAndPlural.join('|') + ')';
-    const previousEndpoints =
-      '^\\/' + version + '\\/(?:' + possibleEndpoints + '\\(\\d+\\)\\/)*';
-    const endpointPlural = '(?:' + endpoint + '|' + entities[endpoint] + ')';
-    const finalEndpoint = endpoint ? endpointPlural : possibleEndpoints;
-    const id = '(?:\\((\\d+)\\)';
-    const ref = '\\/(\\$ref)';
-    const propertyAndValue = '(?:\\/([a-z]\\w*)(?:\\/(\\$value))?)?)?';
-    const idAndProperty = '(?:' + id + propertyAndValue + ')';
-    const propertyOrRef = '(?:' + idAndProperty + '|' + ref + ')?';
-    const route = previousEndpoints + finalEndpoint + propertyOrRef + '$';
-    return new RegExp(route);
-  }
- }
+    let routeExpr = '^\\/' + version + '\\/';
+    const id = '\\((\\d+)\\)';
+    const noCaptureId = '\\(\\d+\\)';
+    const singularEndpoints = noCapture(singularNames.join('|'));
+    const pluralEndpoints = noCapture(pluralNames.join('|'));
+    const pluralAndId = noCapture(pluralEndpoints + noCaptureId);
+    const previousEndpoints =  noCapture(pluralAndId + '|' + singularEndpoints);
+    routeExpr += noCapture(previousEndpoints + '\\/') + '*';
 
- exports.getModelName = name => {
-    let plural;
-    Object.keys(entities).forEach(modelName => {
-      if (entities[modelName] === name) {
-        plural = modelName;
-        return;
-      }
-    });
-    return plural || name;
- }
+    const isPlural = Boolean(entities[endpoint]);
+    const endpointPlural = '(?:' + endpoint + '|' + entities[endpoint] + ')';
+
+    const ref = '\\/(\\$ref)';
+    const propertyAndValue = '(?:\\/([a-z]\\w*)(?:\\/(\\$value))?)?';
+    const singleInstance = noCapture(propertyAndValue + '|' + ref);
+    const idPropAndValue = noCapture(id + propertyAndValue) + '?';
+    const listInstances = noCapture(idPropAndValue + '|' + ref);
+    if (!endpoint) {
+      const singularOptions = noCapture(singularEndpoints + singleInstance);
+      const pluralOptions = noCapture(pluralEndpoints + listInstances);
+      routeExpr += noCapture(singularOptions + '|' + pluralOptions);
+      return new RegExp(routeExpr + '$');
+    }
+
+    routeExpr += endpointPlural;
+    routeExpr += noCapture(isPlural ? listInstances : singleInstance);
+    return new RegExp(routeExpr + '$');
+  },
+  singularNames,
+  pluralNames,
+  singularAndPlural,
+  noCapture,
+  separateBy,
+  possibleEndpoints
+};
+
+exports.route = route;
+
+exports.getModelName = name => {
+  let plural;
+  Object.keys(entities).forEach(modelName => {
+    if (entities[modelName] === name) {
+      plural = modelName;
+      return;
+    }
+  });
+  return plural || name;
+}
