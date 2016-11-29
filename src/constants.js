@@ -6,10 +6,14 @@ export const navigationLink = '@iot.navigationLink';
 
 export const datastream = 'Datastream';
 export const datastreams = 'Datastreams';
+export const datastreamNavigationLink = datastream + navigationLink;
 export const datastreamsNavigationLink = datastreams + navigationLink;
 
+export const featureOfInterest = 'FeatureOfInterest';
 export const featuresOfInterest = 'FeaturesOfInterest';
-export const featuresOfInterestNavitationLink =
+export const featureOfInterestNavigationLink =
+  featureOfInterest + navigationLink;
+export const featuresOfInterestNavigationLink =
   featuresOfInterest + navigationLink;
 
 export const historicalLocations = 'HistoricalLocations';
@@ -24,7 +28,7 @@ export const observationsNavigationLink = observations + navigationLink;
 
 export const observedProperty   = 'ObservedProperty';
 export const observedProperties = 'ObservedProperties';
-export const observedPropertyNavitationLink =
+export const observedPropertyNavigationLink =
   observedProperty + navigationLink;
 export const observedPropertiesNavigationLink =
   observedProperties + navigationLink;
@@ -34,7 +38,9 @@ export const sensors = 'Sensors';
 export const sensorNavigationLink = sensor + navigationLink;
 export const sensorsNavigationLink = sensors + navigationLink;
 
+export const thing = 'Thing';
 export const things = 'Things';
+export const thingNavigationLink = thing + navigationLink;
 export const thingsNavigationLink = things + navigationLink;
 
 export const entities = {
@@ -58,12 +64,15 @@ export const createdAt = 'createdAt';
 export const updatedAt = 'updatedAt';
 export const commonExcludedFields = [createdAt, updatedAt];
 export const excludedFields = {
-  'Datastreams': commonExcludedFields.concat([thingId, sensorId,
+  'Datastreams': commonExcludedFields.concat([thing, thingId,
+                                              sensor, sensorId,
+                                              observedProperty,
                                               observedPropertyId]),
   'FeaturesOfInterest': commonExcludedFields,
-  'HistoricalLocations': commonExcludedFields.concat([thingId]),
+  'HistoricalLocations': commonExcludedFields.concat([thing, thingId]),
   'Locations': commonExcludedFields,
-  'Observations': commonExcludedFields.concat([featureOfInterestId,
+  'Observations': commonExcludedFields.concat([featureOfInterest,
+                                               featureOfInterestId,
                                                datastream,
                                                datastreamId]),
   'ObservedProperties': commonExcludedFields,
