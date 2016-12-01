@@ -17,7 +17,8 @@ const FIELDS_TO_FILTER = [
   'id'
 ];
 
-const formatItem = (item, associations, prepath, exclude, ref) => {
+const formatItem = (item, associations, prepath, options) => {
+  const { exclude, ref } = options;
   // We need to get the data directly from item (and not item.dataValues) so
   // getters and setters of the models are called.
   const name = item.$modelOptions.name;
@@ -51,7 +52,7 @@ const formatItem = (item, associations, prepath, exclude, ref) => {
   return formatedItem;
 }
 
-const generate = (resource, associations, prepath, exclude, ref) => {
+const generate = (resource, associations, prepath, options) => {
   if (resource && Array.isArray(resource)) {
     let response = {};
     response[iotCount] = resource.length;
@@ -59,14 +60,14 @@ const generate = (resource, associations, prepath, exclude, ref) => {
     resource = Array.isArray(resource) ? resource : [resource];
     resource.forEach(item => {
       response.value.push(
-        formatItem(item, associations, prepath, exclude, ref)
+        formatItem(item, associations, prepath, options)
       );
     });
 
     return response;
   }
 
-  return formatItem(resource, associations, prepath, exclude, ref);
+  return formatItem(resource, associations, prepath, options);
 }
 
 module.exports = {

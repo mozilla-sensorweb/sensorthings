@@ -1,7 +1,10 @@
 import db           from '../models/db';
 import express      from 'express';
 import response     from '../response';
-import { entities } from '../constants';
+import {
+  entities,
+  limit
+} from '../constants';
 
 import * as ERR   from '../errors';
 
@@ -33,6 +36,18 @@ module.exports = function resource(endpoint, exclude, version) {
   router.get('', (req, res) => {
     const prepath = req.protocol + '://' + req.hostname + ':' +
                     req.socket.localPort + '/' + version + '/';
+
+    // By default we set a limit of 100 entities max.
+    const top = req.odata && req.odata.$top && req.odata.$top < limit ?
+                req.odata.$top : limit;
+    const skip = req.odata && req.odata.$skip;
+
+    let queryOptions = {
+      limit: top,
+      offset: skip,
+      attributes: undefined
+    };
+
     db().then(models => {
       // req.params[0] may contain the id of the final resource from a URL of
       // this form.
@@ -47,14 +62,13 @@ module.exports = function resource(endpoint, exclude, version) {
         // For example, for a URL like /v1.0/Things(1)/name, req.params[1]
         // would be 'name'.
         const property = req.params[1];
-        let attributes = { exclude };
+        queryOptions.attributes = { exclude };
         if (property) {
-          attributes.include = [ property ];
+          queryOptions.attributes.include = [ property ];
         }
 
-        models[endpoint].findById(req.params[0], {
-          attributes
-        }).then(instance => {
+        models[endpoint].findById(req.params[0], queryOptions)
+        .then(instance => {
           if (!instance) {
             return ERR.ApiError(res, 404, ERR.ERRNO_RESOURCE_NOT_FOUND,
                                 ERR.NOT_FOUND);
@@ -80,7 +94,7 @@ module.exports = function resource(endpoint, exclude, version) {
 
           const associationModels = associations(models);
           res.status(200).send(response.generate(instance, associationModels,
-                                                 prepath, exclude));
+                                                 prepath, { exclude }));
         }).catch(() => {
           return ERR.ApiError(res, 404, ERR.ERRNO_RESOURCE_NOT_FOUND,
                                 ERR.NOT_FOUND);
@@ -127,12 +141,12 @@ module.exports = function resource(endpoint, exclude, version) {
           exclude = exclude.concat([lastResource.model.options.name.plural]);
         }
 
+        queryOptions.attributes = { exclude };
+        queryOptions.include = include;
+
         const ref = req.params[3];
 
-        models[endpoint].findAll({
-          attributes: { exclude },
-          include
-        }).then(instances => {
+        models[endpoint].findAll(queryOptions).then(instances => {
           const singularName = entities[endpoint];
           const associationModels = associations(models);
           if (lastResource && lastResource.model.associations[singularName]) {
@@ -141,12 +155,11 @@ module.exports = function resource(endpoint, exclude, version) {
             return res.status(200).send(response.generate(instances[0],
                                                           associationModels,
                                                           prepath,
-                                                          exclude,
-                                                          ref));
+                                                          { exclude, ref }));
           }
 
           res.status(200).send(response.generate(instances, associationModels,
-                                                 prepath, exclude, ref));
+                                                 prepath, { exclude, ref }));
         });
       }
     }).catch(() => {
@@ -166,7 +179,7 @@ module.exports = function resource(endpoint, exclude, version) {
       models.createInstance(endpoint, req, exclude).then(instance => {
         res.location(prepath + endpoint + '(' + instance.id + ')');
         res.status(201).send(response.generate(instance, associations(models),
-                                               prepath, exclude));
+                                               prepath, { exclude }));
       }).catch(handleModelError(res));
     }).catch(() => {
       ERR.ApiError(res, 500, ERR.ERRNO_INTERNAL_ERROR, ERR.INTERNAL_ERROR);
@@ -188,7 +201,7 @@ module.exports = function resource(endpoint, exclude, version) {
       .then(instance => {
         res.location(prepath + endpoint + '(' + id + ')');
         res.status(200).json(response.generate(instance, associations(models),
-                                               prepath, exclude));
+                                               prepath, { exclude }));
       }).catch(handleModelError(res));
     }).catch(() => {
       ERR.ApiError(res, 500, ERR.ERRNO_INTERNAL_ERROR, ERR.INTERNAL_ERROR);

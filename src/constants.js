@@ -121,3 +121,6 @@ export const integrityConstrains = {
   'ObservedProperties': 'Datastreams',
   'FeaturesOfInterest': 'Observations'
 };
+
+// DB query constants.
+export const limit = 100;
