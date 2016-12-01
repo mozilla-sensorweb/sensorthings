@@ -374,8 +374,9 @@ curl -X POST -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d
         51.05
       ]
     }
-  }
-}' "http://localhost:8080/v1.0/Datastreams(1)/Observations"
+  },
+  "Datastream": { "@iot.id": 1 }
+}' "http://localhost:8080/v1.0/Observations"
 ```
 
 Which should reply with something like:
