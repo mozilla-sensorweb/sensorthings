@@ -3,7 +3,8 @@ import express      from 'express';
 import should       from 'should';
 import supertest    from 'supertest';
 import queryParser  from '../src/middlewares/query_parser'
-import { route }    from '../src/utils'
+import { route }    from '../src/utils';
+import { entities } from '../src/constants';
 
 
 let app = express();
@@ -12,12 +13,13 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 const API_VERSION = 'v1.0';
-const regexp = route.generate(API_VERSION);
 
 app.use('/', queryParser);
 
-app.use(regexp, (req, res) => {
-  res.status(200).json();
+Object.keys(entities).forEach(entityName => {
+  app.use(route.generate(API_VERSION, entityName), (req, res) => {
+    res.status(200).json({ router: entityName });
+  });
 });
 
 const VALID_URLS = [
@@ -107,6 +109,24 @@ describe('Router test', () => {
           should.not.exist(err);
           res.status.should.be.equal(400);
           res.body.errno.should.be.equal(104);
+          done();
+        });
+      });
+    });
+  });
+
+  describe('endpoint urls', () => {
+    const preRoute = 'Observations(1)/';
+    Object.keys(entities).forEach(entityName => {
+      it('should access to the property of a singular association', done => {
+        const url = preRoute + entities[entityName] + '/name';
+        server.get(prepath + url)
+        .expect('Content-Type', /json/)
+        .expect(200)
+        .end((err, res) => {
+          should.not.exist(err);
+          res.status.should.be.equal(200);
+          res.body.router.should.be.equal(entityName);
           done();
         });
       });

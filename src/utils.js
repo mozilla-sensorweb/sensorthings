@@ -57,14 +57,12 @@ const route = {
     const previousEndpoints =  noCapture(pluralAndId + '|' + singularEndpoints);
     routeExpr += noCapture(previousEndpoints + '\\/') + '*';
 
-    const isPlural = Boolean(entities[endpoint]);
-    const endpointPlural = '(?:' + endpoint + '|' + entities[endpoint] + ')';
-
     const ref = '\\/(\\$ref)';
     const propertyAndValue = '(?:\\/([a-z]\\w*)(?:\\/(\\$value))?)?';
     const singleInstance = noCapture(propertyAndValue + '|' + ref);
     const idPropAndValue = noCapture(id + propertyAndValue) + '?';
     const listInstances = noCapture(idPropAndValue + '|' + ref);
+
     if (!endpoint) {
       const singularOptions = noCapture(singularEndpoints + singleInstance);
       const pluralOptions = noCapture(pluralEndpoints + listInstances);
@@ -72,8 +70,10 @@ const route = {
       return new RegExp(routeExpr + '$');
     }
 
-    routeExpr += endpointPlural;
-    routeExpr += noCapture(isPlural ? listInstances : singleInstance);
+    const singEndpointOptions = entities[endpoint]  + singleInstance;
+    const pluralEndpointOptions = endpoint + listInstances;
+    routeExpr += noCapture(pluralEndpointOptions + '|' + singEndpointOptions);
+
     return new RegExp(routeExpr + '$');
   },
   singularNames,
