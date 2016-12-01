@@ -4,9 +4,10 @@
 
 'use strict';
 
-import fs        from 'fs';
-import path      from 'path';
-import Sequelize from 'sequelize';
+import fs               from 'fs';
+import path             from 'path';
+import Sequelize        from 'sequelize';
+import { getModelName } from '../utils'
 
 import {
   entities,
@@ -16,8 +17,10 @@ import {
 
 import {
   BAD_REQUEST,
+  ERRNO_BAD_REQUEST,
   ERRNO_INLINE_CONTENT_NOT_ALLOWED,
   ERRNO_INVALID_ASSOCIATION,
+  ERRNO_MANDATORY_ASSOCIATION_MISSING,
   INTERNAL_ERROR,
   NOT_FOUND
 } from '../errors';
@@ -178,6 +181,29 @@ module.exports = config => {
       //   }
       // }
       //
+
+      // Given a POST to modelA with an inline entity modelB, the implicit
+      // association between modelA and modelB needs to be reflected in the
+      // inline entity, in order to avoid mandatory association issues.
+      try {
+        const modelA = instance.$modelOptions.name.plural;
+        const associationsOfModelB = association.target.associations;
+        Object.keys(associationsOfModelB).forEach(associationName => {
+          if (getModelName(associationName) === modelA) {
+            if (associatedEntity[associationName]) {
+              throw Object.create({
+                name: BAD_REQUEST,
+                errno: ERRNO_BAD_REQUEST,
+                errors: 'Could not create entity with body ' + associatedEntity
+              });
+            }
+            associatedEntity[associationName] = { '@iot.id': instance.id }
+          }
+        });
+      } catch(error) {
+        return Promise.reject(error);
+      }
+
       // In this case, after creating the instance of ModelB, we need
       // to process the body of ModelB to see if there are related entites
       // in it, like modelC.
@@ -304,6 +330,15 @@ module.exports = config => {
         // For each possible association we check if the request body contains
         // any reference to the association model.
         if (!body) {
+          // Issue #137: When creating an Observation without FeatureOfInterest,
+          // we should extract it from Locations
+          if (association.mandatory) {
+            throw Object.create({
+              name: BAD_REQUEST,
+              errno: ERRNO_MANDATORY_ASSOCIATION_MISSING,
+              errors: 'Missing mandatory association: ' + associationName
+            });
+          }
           return;
         }
 

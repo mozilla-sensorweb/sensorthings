@@ -1,13 +1,14 @@
 // errno
 const errnos = {
-  ERRNO_INTERNAL_ERROR              : 500,
-  ERRNO_RESOURCE_NOT_FOUND          : 404,
-  ERRNO_BAD_REQUEST                 : 400,
-  ERRNO_VALIDATION_ERROR            : 100,
-  ERRNO_MALFORMED_URL               : 101,
-  ERRNO_INVALID_ASSOCIATION         : 102,
-  ERRNO_INLINE_CONTENT_NOT_ALLOWED  : 103,
-  ERRNO_INVALID_QUERY_STRING        : 104
+  ERRNO_INTERNAL_ERROR                  : 500,
+  ERRNO_RESOURCE_NOT_FOUND              : 404,
+  ERRNO_BAD_REQUEST                     : 400,
+  ERRNO_VALIDATION_ERROR                : 100,
+  ERRNO_MALFORMED_URL                   : 101,
+  ERRNO_INVALID_ASSOCIATION             : 102,
+  ERRNO_INLINE_CONTENT_NOT_ALLOWED      : 103,
+  ERRNO_INVALID_QUERY_STRING            : 104,
+  ERRNO_MANDATORY_ASSOCIATION_MISSING   : 105
 };
 
 exports.errnos = errnos;
