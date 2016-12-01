@@ -55,13 +55,16 @@ export default version => {
         previousResource = resource;
         resource = parseResource(resourcesLeft.shift());
 
-        req.lastResource = previousResource;
-
         // It is possible that we are handling a url to a property of an
-        // entity (9.2.4)
+        // entity (9.2.4). Or an address to an associationLink (9.2.7).
         if (!resource.model) {
           return next();
         }
+
+        // We only set 'lastResource' if the resource is a model.
+        // i.e in ModelA(1)/ModelB/something or ModelA(1)/ModelB(1)/something
+        // lastResource won't be ModelB, but ModelA.
+        req.lastResource = previousResource;
 
         // Check that the association is possible between the two models.
         const previousModel = previousResource.model;

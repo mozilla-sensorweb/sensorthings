@@ -34,7 +34,18 @@ module.exports = function resource(endpoint, exclude, version) {
     const prepath = req.protocol + '://' + req.hostname + ':' +
                     req.socket.localPort + '/' + version + '/';
     db().then(models => {
+      // req.params[0] may contain the id of the final resource from a URL of
+      // this form.
+      //
+      // '[/:Resource(n)]n times/FinalResource(id)?/property?/($value | $ref)?
+      //
+      // For example, for a URL like /v1.0/Things(1)/Locations(2),
+      // req.params[0] would be 2.
       if (req.params && req.params[0]) {
+        // Likewise, req.params[1] may contain a property name.
+        //
+        // For example, for a URL like /v1.0/Things(1)/name, req.params[1]
+        // would be 'name'.
         const property = req.params[1];
         let attributes = { exclude };
         if (property) {
@@ -60,9 +71,6 @@ module.exports = function resource(endpoint, exclude, version) {
             if (value === '$value') {
               // 9.2.5 Usage 5: address to the value of an entity’s property.
               body = instance[property];
-            } else if (value === '$ref') {
-              // 9.2.7 Usage 7: address to an associationLink
-              // XXX Issue #54
             } else {
               // 9.2.4 Usage 4: address to a property of an entity.
               body[property] = instance[property];
@@ -78,6 +86,16 @@ module.exports = function resource(endpoint, exclude, version) {
                                 ERR.NOT_FOUND);
         });
       } else {
+        // Here we are implementing three resource path handlers:
+        // 1. If no lastResource is set, we implement 9.2.2 Usage 2: address to
+        //    a collection of entities. For ex.
+        //    http://example.org/v1.0/ObservedProperties
+        // 2. If lastResource is set, we implement:
+        //    * 9.2.6 Usage 6: address to a navigation prop (navigationLink)
+        //    For ex. http://example.org/v1.0/Datastreams(1)/Observations
+        //    * 9.2.7 Usage 7: address to an associationLink
+        //    For ex. http://example.org/v1.0/Datastreams(1)/Observations/$ref
+
         let include;
         const lastResource = req.lastResource;
         if (lastResource) {
@@ -91,7 +109,7 @@ module.exports = function resource(endpoint, exclude, version) {
           // instances of the `endpoint` model that are associated to the
           // entity defined by lastResource.
           //
-          // For ex. in a request like
+          // For ex. on a request like
           // http://localhost:8080/v1.0/Things(1)/Locations
           // lastResource would be
           // {
@@ -109,13 +127,8 @@ module.exports = function resource(endpoint, exclude, version) {
           exclude = exclude.concat([lastResource.model.options.name.plural]);
         }
 
-        // Here we are implementing two resource path handlers:
-        // 1. If no lastResource is set, we implement 9.2.2 Usage 2: address to
-        //    a collection of entities. For ex.
-        //    http://example.org/v1.0/ObservedProperties
-        // 2. If lastResource is set, we implement 9.2.6 Usage 6: address to a
-        //    navigation property (navigationLink). For ex.
-        //    http://example.org/v1.0/Datastreams(1)/Observations
+        const ref = req.params[3];
+
         models[endpoint].findAll({
           attributes: { exclude },
           include
@@ -128,11 +141,12 @@ module.exports = function resource(endpoint, exclude, version) {
             return res.status(200).send(response.generate(instances[0],
                                                           associationModels,
                                                           prepath,
-                                                          exclude));
+                                                          exclude,
+                                                          ref));
           }
 
           res.status(200).send(response.generate(instances, associationModels,
-                                                 prepath, exclude));
+                                                 prepath, exclude, ref));
         });
       }
     }).catch(() => {

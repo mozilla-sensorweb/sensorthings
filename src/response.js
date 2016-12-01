@@ -9,6 +9,7 @@
 import {
   featuresOfInterest,
   iotCount,
+  iotId,
   navigationLink,
 } from './constants';
 
@@ -16,7 +17,7 @@ const FIELDS_TO_FILTER = [
   'id'
 ];
 
-const formatItem = (item, associations, prepath, exclude) => {
+const formatItem = (item, associations, prepath, exclude, ref) => {
   // We need to get the data directly from item (and not item.dataValues) so
   // getters and setters of the models are called.
   const name = item.$modelOptions.name;
@@ -26,9 +27,15 @@ const formatItem = (item, associations, prepath, exclude) => {
     featuresOfInterest
   ].indexOf(name.singular) === -1 ? name.plural : name.singular;
   let formatedItem = {
-    '@iot.id': item.id,
     '@iot.selfLink': prepath + resourceName + '(' + item.id + ')'
   };
+
+  if (ref) {
+    // 9.2.7 Usage 7: address to an associationLink.
+    return formatedItem;
+  }
+
+  formatedItem[iotId] = item.id;
 
   associations && associations.forEach(association => {
     formatedItem[association + navigationLink] =
@@ -44,19 +51,22 @@ const formatItem = (item, associations, prepath, exclude) => {
   return formatedItem;
 }
 
-const generate = (resource, associations, prepath, exclude) => {
+const generate = (resource, associations, prepath, exclude, ref) => {
   if (resource && Array.isArray(resource)) {
     let response = {};
     response[iotCount] = resource.length;
     response.value = [];
+    resource = Array.isArray(resource) ? resource : [resource];
     resource.forEach(item => {
-      response.value.push(formatItem(item, associations, prepath, exclude));
+      response.value.push(
+        formatItem(item, associations, prepath, exclude, ref)
+      );
     });
 
     return response;
   }
 
-  return formatItem(resource, associations, prepath, exclude);
+  return formatItem(resource, associations, prepath, exclude, ref);
 }
 
 module.exports = {

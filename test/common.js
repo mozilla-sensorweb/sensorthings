@@ -88,8 +88,9 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
             const property = mandatory[0];
             const relations = {};
             associatedModels.forEach(modelName => {
-              relations[modelName] = relations[modelName] || [];
-              relations[modelName].push(CONST[modelName + 'Entity']);
+              const associationName = associationsMap[modelName];
+              relations[associationName] = relations[associationName] || [];
+              relations[associationName].push(CONST[modelName + 'Entity']);
             });
 
             const instance = Object.assign({}, testEntity, relations);
@@ -195,6 +196,32 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
               }));
             });
             Promise.all(promises).then(() => done());
+        });
+
+        it('should respond 200 to valid associationLink url', done => {
+          let promises = [];
+          associatedModels.forEach(modelName => {
+            const path = endpoint + '(' + instanceId + ')/' +
+                         associationsMap[modelName] + '/$ref';
+            promises.push(new Promise(resolve => {
+              server.get(prepath + path)
+              .expect('Content-Type', /json/)
+              .expect(200)
+              .end((err, res) => {
+                should.not.exist(err);
+                let value = res.body;
+                if (res.body[CONST.iotCount]) {
+                  res.body[CONST.iotCount].should.be.equal(1);
+                  value = res.body.value[0];
+                }
+                value[CONST.iotSelfLink].indexOf(
+                  fullPrepath + modelName
+                ).should.not.be.equal(-1);
+                resolve();
+              });
+            }));
+          });
+          Promise.all(promises).then(() => done());
         });
 
         it('should respond 404 if invalid id is provided', done => {
