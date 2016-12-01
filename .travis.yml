@@ -24,6 +24,7 @@ before_script:
 script:
 - if [[ "$TESTS" = "OGC_TESTS" ]]; then source ./scripts/OGC_tests/install_tests.sh ; fi
 - if [[ "$TESTS" = "OGC_TESTS" ]]; then source ./scripts/preconditions.sh ; fi
+- if [[ "$TESTS" = "OGC_TESTS" ]]; then source ./scripts/populateDB.sh ; fi
 - if [[ "$TESTS" = "OGC_TESTS" ]]; then source ./scripts/OGC_tests/launch_tests.sh ; fi
 after_success:
 - if [[ "$TESTS" = "API" ]]; then npm run coverage ; fi
