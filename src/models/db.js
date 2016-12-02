@@ -11,6 +11,7 @@ import { getModelName } from '../utils'
 
 import {
   entities,
+  featureOfInterest,
   integrityConstrains,
   iotId
 } from '../constants';
@@ -213,6 +214,20 @@ module.exports = config => {
   }
 
   /*
+   * Private method that converts a Location into a FeatureOfInterest
+  */
+  const featureOfInterestFromLocation = location => {
+    if (!location) {
+      return null;
+    }
+
+    const feature = Object.assign({}, location);
+    feature.feature = Object.assign({}, feature.location);
+    Reflect.deleteProperty(feature, 'location');
+    return feature;
+  }
+
+  /*
    * Method to check if the recently created instance needs to be associated
    * with any other entity.
    * An association can happen because:
@@ -325,7 +340,24 @@ module.exports = config => {
     //
     Object.keys(relations).forEach(associationName => {
       const association = relations[associationName];
-      const body = req.body[associationName];
+      let body = req.body[associationName];
+
+      // In the case of creating an Observation whose FeatureOfInterest is the
+      // Thing’s Location (that means the Thing entity has a related Location
+      // entity), the request of creating the Observation SHOULD NOT include a
+      // link to a FeatureOfInterest entity. The service will first
+      // automatically create a FeatureOfInterest entity from the Location of
+      // the Thing and then link to the Observation.
+      if (associationName === featureOfInterest) {
+        let location;
+        try {
+          location = req.body.Datastream.Thing.Locations;
+        } catch(error) {
+          location = null;
+        }
+        body = body || featureOfInterestFromLocation(location);
+      }
+
       // For each possible association we check if the request body contains
       // any reference to the association model.
       if (!body) {
