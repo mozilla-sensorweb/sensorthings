@@ -102,6 +102,7 @@ export const observationTypes = {
 
 export const iotCount = '@iot.count';
 export const iotId = '@iot.id';
+export const iotNextLink = '@iot.nextLink';
 export const iotSelfLink = '@iot.selfLink';
 
 export const hasMany = 'HasMany';

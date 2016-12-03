@@ -125,7 +125,8 @@ export default config => {
       }
 
       const options = {
-        exclude: queryOptions.attributes.exclude
+        exclude: queryOptions.attributes.exclude,
+        ref: req.params[3]
       };
 
       if (property) {
@@ -200,20 +201,23 @@ export default config => {
 
     const options = {
       exclude: queryOptions.attributes.exclude,
-      ref: req.params[3]
+      ref: req.params[3],
+      top: queryOptions.limit,
+      skip: queryOptions.offset
     };
 
-    return db[modelName].findAll(queryOptions).then(instances => {
+    return db[modelName].findAndCountAll(queryOptions).then(result => {
       const singularName = entities[modelName];
-      let inst = instances;
+      let instance = result.rows;
       if (lastResource && lastResource.model.associations[singularName]) {
         // If the association with the singular name exists, it means
         // that is a single association.
-        inst = instances[0];
+        instance = result.rows[0];
       }
+      options.count = result.count;
       return Promise.resolve({
         code: 200,
-        instance: inst,
+        instance,
         options
       });
     });

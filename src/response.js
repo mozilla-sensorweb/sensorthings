@@ -10,6 +10,7 @@ import {
   featuresOfInterest,
   iotCount,
   iotId,
+  iotNextLink,
   navigationLink,
 } from './constants';
 
@@ -54,8 +55,25 @@ const formatItem = (item, associations, prepath, options) => {
 
 const generate = (resource, associations, prepath, options) => {
   if (resource && Array.isArray(resource)) {
+    const { top, skip, count } = options;
+
     let response = {};
+
     response[iotCount] = resource.length;
+
+    if (resource.length) {
+      const resourceName = resource[0].$modelOptions.name.plural;
+
+      // We add the next link only if there are items left in the pagination
+      // stack.
+      const nextSkip = skip ? skip + top : top;
+      if (top && (nextSkip < count)) {
+        response[iotNextLink] = prepath + resourceName +
+                                '?$top=' + top +
+                                '&$skip=' + nextSkip;
+      }
+    }
+
     response.value = [];
     resource = Array.isArray(resource) ? resource : [resource];
     resource.forEach(item => {

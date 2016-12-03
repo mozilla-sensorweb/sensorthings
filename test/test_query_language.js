@@ -17,9 +17,11 @@ import * as ERR   from '../src/errors';
 db().then(models => {
   describe('Query language', () => {
 
-    const server   = supertest.agent(app);
+    const port     = 8123;
+    const server   = supertest.agent(app.listen(port));
     const limit    = CONST.limit;
     const prepath  = '/v1.0/';
+    const fullPrepath      = 'http://127.0.0.1:' + port + prepath;
 
     const get = endpoint => {
       return new Promise(resolve => {
@@ -40,6 +42,7 @@ db().then(models => {
         .expect(error.code)
         .end((err, res) => {
           should.not.exist(err);
+          should.not.exist(res.body[CONST.nextLink]);
           res.body.should.be.deepEqual(error);
           resolve();
         });
@@ -47,9 +50,8 @@ db().then(models => {
     };
 
     describe('$top and $skip', () => {
-
       const modelName = 'Things';
-      const topSkipLimit = 102;
+      const topSkipLimit = 302;
 
       before(done => {
         const model = models[modelName];
@@ -67,21 +69,38 @@ db().then(models => {
 
       [{
         top: undefined,
-        expected: limit
+        expected: limit,
+        nextLink: {
+          top: limit,
+          skip: limit
+        }
       }, {
         top: 50,
-        expected: 50
+        expected: 50,
+        nextLink: {
+          top: 50,
+          skip: 50
+        }
       }, {
         top: 101,
-        expected: limit
+        expected: limit,
+        nextLink: {
+          top: limit,
+          skip: limit
+        }
       }].forEach(test => {
         const query = test.top ? '?$top=' + test.top : '';
         it('GET ' + modelName + query +
            ' should respond with ' + test.expected + ' entities',
            done => {
-          get(modelName + query, test.expected === undefined)
+          get(modelName + query)
           .then(result => {
             result[CONST.iotCount].should.be.equal(test.expected);
+            const nextLink = fullPrepath + modelName +
+                             '?$top=' + test.nextLink.top +
+                             '&$skip=' + test.nextLink.skip;
+
+            result[CONST.iotNextLink].should.be.equal(nextLink);
             done();
           });
         });
@@ -96,16 +115,6 @@ db().then(models => {
           message: '$top'
         }).then(() => {
           done()
-        });
-      });
-
-      it('GET ' + modelName + '?$skip=' + limit + ' should respond with ' +
-         (topSkipLimit - limit) + ' entities',
-         done => {
-        get(modelName + '?$skip=' + limit)
-        .then(result => {
-          result[CONST.iotCount].should.be.equal(2);
-          done();
         });
       });
     });
