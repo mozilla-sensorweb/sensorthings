@@ -17,11 +17,12 @@ import * as ERR   from '../src/errors';
 db().then(models => {
   describe('Query language', () => {
 
-    const port     = 8123;
-    const server   = supertest.agent(app.listen(port));
-    const limit    = CONST.limit;
-    const prepath  = '/v1.0/';
-    const fullPrepath      = 'http://127.0.0.1:' + port + prepath;
+    const port        = 8123;
+    const server      = supertest.agent(app.listen(port));
+    const limit       = CONST.limit;
+    const prepath     = '/v1.0/';
+    const fullPrepath = 'http://127.0.0.1:' + port + prepath;
+    const modelName   = 'Things';
 
     const get = endpoint => {
       return new Promise(resolve => {
@@ -49,22 +50,25 @@ db().then(models => {
       });
     };
 
+    const insert = (count, done) => {
+      const model = models[modelName];
+      const entity = Object.assign({}, CONST[modelName + 'Entity']);
+      let promises = [];
+      model.destroy({ where: {} }).then(() => {
+        for (let i = 0; i < count; i++) {
+          promises.push(model.create(entity));
+        }
+        Promise.all(promises).then(() => {
+          done()
+        });
+      });
+    };
+
     describe('$top and $skip', () => {
-      const modelName = 'Things';
       const topSkipLimit = 302;
 
       before(done => {
-        const model = models[modelName];
-        const entity = Object.assign({}, CONST[modelName + 'Entity']);
-        let promises = [];
-        model.destroy({ where: {} }).then(() => {
-          for (let i = 0; i < topSkipLimit; i++) {
-            promises.push(model.create(entity));
-          }
-          Promise.all(promises).then(() => {
-            done()
-          });
-        });
+        insert(topSkipLimit, done);
       });
 
       [{
@@ -95,11 +99,12 @@ db().then(models => {
            done => {
           get(modelName + query)
           .then(result => {
-            result[CONST.iotCount].should.be.equal(test.expected);
+            result[CONST.iotCount].should.be.equal(topSkipLimit);
+            result.value.should.be.instanceof(Array).and.have.lengthOf(
+              test.expected);
             const nextLink = fullPrepath + modelName +
                              '?$top=' + test.nextLink.top +
                              '&$skip=' + test.nextLink.skip;
-
             result[CONST.iotNextLink].should.be.equal(nextLink);
             done();
           });
@@ -115,6 +120,31 @@ db().then(models => {
           message: '$top'
         }).then(() => {
           done()
+        });
+      });
+    });
+
+    describe('$count', () => {
+      const count = 10;
+
+      before(done => {
+        insert(count, done);
+      });
+
+      it('should respond with count', done => {
+        get(modelName + '?$count=true')
+        .then(result => {
+          result[CONST.iotCount].should.be.equal(count);
+          done();
+        });
+      });
+
+      // XXX OData parser. $count is not supported.
+      xit('should respond without count', done => {
+        get(modelName + '?$count=false')
+        .then(result => {
+          should.not.exist(result[CONST.iotCount]);
+          done();
         });
       });
     });

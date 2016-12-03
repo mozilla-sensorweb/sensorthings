@@ -7,7 +7,6 @@
  */
 
 import {
-  featuresOfInterest,
   iotCount,
   iotId,
   iotNextLink,
@@ -22,12 +21,7 @@ const formatItem = (item, associations, prepath, options) => {
   const { exclude, ref } = options;
   // We need to get the data directly from item (and not item.dataValues) so
   // getters and setters of the models are called.
-  const name = item.$modelOptions.name;
-  // Sequelize does not generate the proper plural for the FeaturesOfInterest
-  // model.
-  const resourceName = [
-    featuresOfInterest
-  ].indexOf(name.singular) === -1 ? name.plural : name.singular;
+  const resourceName = item.$modelOptions.name.plural;
   let formatedItem = {
     '@iot.selfLink': prepath + resourceName + '(' + item.id + ')'
   };
@@ -55,19 +49,31 @@ const formatItem = (item, associations, prepath, options) => {
 
 const generate = (resource, associations, prepath, options) => {
   if (resource && Array.isArray(resource)) {
-    const { top, skip, count } = options;
+    const { top, skip, count, totalCount } = options;
 
     let response = {};
 
-    response[iotCount] = resource.length;
+    // The $count system query option with a value of true specifies that the
+    // total count of items within a collection matching the request SHALL be
+    // returned along with the result. A $count query option with a value of
+    // false (or not specified) hints that the service SHALL not return a
+    // count.
+    if (count !== 'false') {
+      response[iotCount] = totalCount;
+    }
 
     if (resource.length) {
       const resourceName = resource[0].$modelOptions.name.plural;
 
+      // The nextLink annotation indicates that a response is only a subset of
+      // the requested collection of entities or collection of entity
+      // references. It contains a URL that allows retrieving the next subset
+      // of the requested collection.
+      //
       // We add the next link only if there are items left in the pagination
       // stack.
       const nextSkip = skip ? skip + top : top;
-      if (top && (nextSkip < count)) {
+      if (top && (nextSkip < totalCount)) {
         response[iotNextLink] = prepath + resourceName +
                                 '?$top=' + top +
                                 '&$skip=' + nextSkip;

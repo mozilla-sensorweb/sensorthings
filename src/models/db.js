@@ -203,7 +203,8 @@ export default config => {
       exclude: queryOptions.attributes.exclude,
       ref: req.params[3],
       top: queryOptions.limit,
-      skip: queryOptions.offset
+      skip: queryOptions.offset,
+      count: req.odata && req.odata.$count
     };
 
     return db[modelName].findAndCountAll(queryOptions).then(result => {
@@ -214,7 +215,7 @@ export default config => {
         // that is a single association.
         instance = result.rows[0];
       }
-      options.count = result.count;
+      options.totalCount = result.count;
       return Promise.resolve({
         code: 200,
         instance,
