@@ -10,8 +10,10 @@ import path             from 'path';
 import Sequelize        from 'sequelize';
 
 import {
+  entities,
   integrityConstrains,
-  iotId
+  iotId,
+  limit
 } from '../constants';
 
 import {
@@ -101,6 +103,163 @@ export default config => {
         return Association.maybeCreate(transaction, instance,
                                        req, exclude);
       });
+    });
+  };
+
+  const getById = (modelName, req, queryOptions) => {
+    // req.params[1] may contain a property name.
+    //
+    // For example, for a URL like /v1.0/Things(1)/name, req.params[1]
+    // would be 'name'.
+    const property = req.params[1];
+    if (property) {
+      queryOptions.attributes.include = [ property ];
+    }
+
+    return db[modelName].findById(req.params[0], queryOptions)
+    .then(instance => {
+      if (!instance) {
+        return Promise.reject({
+          name: NOT_FOUND,
+        });
+      }
+
+      const options = {
+        exclude: queryOptions.attributes.exclude
+      };
+
+      if (property) {
+        // If the value of the property is null, it should respond 204
+        if (!instance[property]) {
+          return Promise.resolve({
+            code: 204
+          });
+        }
+
+        let body;
+        const value = req.params[2];
+        if (value === '$value') {
+          // 9.2.5 Usage 5: address to the value of an entity’s property.
+          body = instance[property];
+        } else {
+          // 9.2.4 Usage 4: address to a property of an entity.
+          body = {};
+          body[property] = instance[property];
+        }
+        return Promise.resolve({
+          code: 200,
+          body,
+          options
+        });
+      }
+
+      return Promise.resolve({
+        code: 200,
+        instance,
+        options
+      });
+    }).catch(() => {
+      return Promise.reject({
+        name: NOT_FOUND
+      });
+    });
+  };
+
+  const get = (modelName, req, queryOptions) => {
+    const lastResource = req.lastResource;
+    if (lastResource) {
+      // lastResource is an object of this form:
+      // {
+      //   model <Sequelize Model>,
+      //   id: <String>
+      // }
+      //
+      // If it is set, we need to query the database to obtain all the
+      // instances of the `modelName` model that are associated to the
+      // entity defined by lastResource.
+      //
+      // For ex. on a request like
+      // http://localhost:8080/v1.0/Things(1)/Locations
+      // lastResource would be
+      // {
+      //   model: Things,
+      //   id: 1
+      // }
+      //
+      // So we would need to get all Locations associated to the Thing with
+      // id 1.
+      //
+      queryOptions.include = [{
+        model: lastResource.model,
+        where: { id: lastResource.id }
+      }];
+      queryOptions.attributes.exclude = queryOptions.attributes.exclude.concat([
+        lastResource.model.options.name.plural
+      ]);
+    }
+
+    const options = {
+      exclude: queryOptions.attributes.exclude,
+      ref: req.params[3]
+    };
+
+    return db[modelName].findAll(queryOptions).then(instances => {
+      const singularName = entities[modelName];
+      let inst = instances;
+      if (lastResource && lastResource.model.associations[singularName]) {
+        // If the association with the singular name exists, it means
+        // that is a single association.
+        inst = instances[0];
+      }
+      return Promise.resolve({
+        code: 200,
+        instance: inst,
+        options
+      });
+    });
+  };
+
+  db.getInstance = (modelName, req, exclude) => {
+    return db.sequelize.transaction(transaction => {
+      // By default we set a limit of 100 entities max.
+      const top = req.odata && req.odata.$top && req.odata.$top < limit ?
+                  req.odata.$top : limit;
+      const skip = req.odata && req.odata.$skip;
+
+      let queryOptions = {
+        transaction,
+        limit: top,
+        offset: skip,
+        attributes: { exclude }
+      };
+
+      // req.params[0] may contain the id of the final resource from a URL of
+      // this form.
+      //
+      // '[/:Resource(n)]n times/FinalResource(id)?/property?/($value | $ref)?
+      //
+      // For example, for a URL like /v1.0/Things(1)/Locations(2),
+      // req.params[0] would be 2.
+      const id = req.params && req.params[0];
+
+      if (id) {
+        // If the id is present in the request, we may be handling one of these
+        // two resource paths:
+        // * 9.2.5 Usage 5: address to the value of an entity’s property.
+        // * 9.2.4 Usage 4: address to a property of an entity.
+        return getById(modelName, req, queryOptions);
+      }
+
+      // Otherwise, we may be handling one of three possible resource paths:
+      // 1. If no lastResource is set, we implement 9.2.2 Usage 2: address to
+      //    a collection of entities. For ex.
+      //    http://example.org/v1.0/ObservedProperties
+      // 2. If lastResource is set, we implement:
+      //    * 9.2.6 Usage 6: address to a navigation prop (navigationLink)
+      //    For ex. http://example.org/v1.0/Datastreams(1)/Observations
+      //    * 9.2.7 Usage 7: address to an associationLink
+      //    For ex. http://example.org/v1.0/Datastreams(1)/Observations/$ref
+      return get(modelName, req, queryOptions);
     });
   };
 
