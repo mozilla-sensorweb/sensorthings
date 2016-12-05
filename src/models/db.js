@@ -274,20 +274,6 @@ module.exports = config => {
         });
       }
 
-      // The spec does not specifically mention this, but in order to avoid
-      // confussion, we forbid the case where an association is done in both
-      // the URL and the request body. So for example, a request like this is
-      // not valid.
-      //
-      // POST v1.0/Things(1)/Locations
-      // {
-      //   Thing: {
-      //     '@iot.id': 1
-      //   }
-      // }
-      //
-      // XXX if (req.body[]) { }
-
       const modelToAssociateWith = lastResource.model;
       const association = relations[lastResource.associationName] ||
                           relations[entities[lastResource.associationName]];
