@@ -323,50 +323,46 @@ module.exports = config => {
     // to it the existing Datastream with id 1 and the existing
     // FeaturesOfInterest with id 2, if they really exist.
     //
-    try {
-      Object.keys(relations).forEach(associationName => {
-        const association = relations[associationName];
-        const body = req.body[associationName];
-        // For each possible association we check if the request body contains
-        // any reference to the association model.
-        if (!body) {
-          // Issue #137: When creating an Observation without FeatureOfInterest,
-          // we should extract it from Locations
-          if (association.mandatory) {
-            throw Object.create({
-              name: BAD_REQUEST,
-              errno: ERRNO_MANDATORY_ASSOCIATION_MISSING,
-              errors: 'Missing mandatory association: ' + associationName
-            });
-          }
-          return;
-        }
-
-        const isList = Array.isArray(body);
-
-        if (isList && !association.isMultiAssociation) {
+    Object.keys(relations).forEach(associationName => {
+      const association = relations[associationName];
+      const body = req.body[associationName];
+      // For each possible association we check if the request body contains
+      // any reference to the association model.
+      if (!body) {
+        // Issue #137: When creating an Observation without FeatureOfInterest,
+        // we should extract it from Locations
+        if (association.mandatory) {
           throw Object.create({
             name: BAD_REQUEST,
-            errno: ERRNO_INVALID_ASSOCIATION,
-            errors: 'Cannot use arrays for this association type'
+            errno: ERRNO_MANDATORY_ASSOCIATION_MISSING,
+            errors: 'Missing mandatory association: ' + associationName
           });
         }
+        return;
+      }
 
-        const associatedEntities = isList ? body : [body];
-        const pluralName = association.options.name.plural;
-        const modelToAssociateWith = db[associationName] || db[pluralName];
+      const isList = Array.isArray(body);
 
-        associatedEntities.forEach(associatedEntity => {
-          promises.push(createAssociation(transaction, instance,
-                                          modelToAssociateWith,
-                                          association,
-                                          associatedEntity,
-                                          exclude));
+      if (isList && !association.isMultiAssociation) {
+        throw Object.create({
+          name: BAD_REQUEST,
+          errno: ERRNO_INVALID_ASSOCIATION,
+          errors: 'Cannot use arrays for this association type'
         });
+      }
+
+      const associatedEntities = isList ? body : [body];
+      const pluralName = association.options.name.plural;
+      const modelToAssociateWith = db[associationName] || db[pluralName];
+
+      associatedEntities.forEach(associatedEntity => {
+        promises.push(createAssociation(transaction, instance,
+                                        modelToAssociateWith,
+                                        association,
+                                        associatedEntity,
+                                        exclude));
       });
-    } catch(error) {
-      return Promise.reject(error);
-    }
+    });
 
     return Promise.all(promises).then(() => instance);
   }
@@ -416,56 +412,52 @@ module.exports = config => {
           // update the associations as well before returning the updated
           // instance.
           let promises = [];
-          try {
-            Object.keys(associations).forEach(associationName => {
-              const association = associations[associationName];
-              const associationBody = values[associationName];
-              // There is no entry for this association in the request body, so
-              // we just try with the next one.
-              if (!associationBody) {
-                return;
-              }
+          Object.keys(associations).forEach(associationName => {
+            const association = associations[associationName];
+            const associationBody = values[associationName];
+            // There is no entry for this association in the request body, so
+            // we just try with the next one.
+            if (!associationBody) {
+              return;
+            }
 
-              const isList = Array.isArray(associationBody);
+            const isList = Array.isArray(associationBody);
 
-              if (isList && !association.isMultiAssociation) {
+            if (isList && !association.isMultiAssociation) {
+              throw Object.create({
+                name: BAD_REQUEST,
+                errno: ERRNO_INVALID_ASSOCIATION,
+                errors: 'Cannot use arrays for this association type'
+              });
+            }
+
+            const associationBodies =
+              isList ? associationBody : [associationBody];
+            associationBodies.forEach(body => {
+              const id = body[iotId];
+
+              // The entity SHALL NOT contain related entities as inline
+              // content. It MAY contain only binding information for
+              // navigation properties. So we only allow the @iot.id field.
+              if (Object.keys(body).length !== 1 ||
+                  typeof(id) === 'undefined') {
                 throw Object.create({
                   name: BAD_REQUEST,
-                  errno: ERRNO_INVALID_ASSOCIATION,
-                  errors: 'Cannot use arrays for this association type'
+                  errno: ERRNO_INLINE_CONTENT_NOT_ALLOWED,
+                  errors: 'Inline content is not allowed for PATCH requests'
                 });
               }
 
-              const associationBodies =
-                isList ? associationBody : [associationBody];
-              associationBodies.forEach(body => {
-                const id = body[iotId];
-
-                // The entity SHALL NOT contain related entities as inline
-                // content. It MAY contain only binding information for
-                // navigation properties. So we only allow the @iot.id field.
-                if (Object.keys(body).length !== 1 ||
-                    typeof(id) === 'undefined') {
-                  throw Object.create({
-                    name: BAD_REQUEST,
-                    errno: ERRNO_INLINE_CONTENT_NOT_ALLOWED,
-                    errors: 'Inline content is not allowed for PATCH requests'
-                  });
-                }
-
-                promises.push(
-                  applyAssociation(transaction,
-                                   instance,
-                                   association.target,
-                                   association,
-                                   id, id,
-                                   exclude)
-                );
-              });
+              promises.push(
+                applyAssociation(transaction,
+                                 instance,
+                                 association.target,
+                                 association,
+                                 id, id,
+                                 exclude)
+              );
             });
-          } catch(error) {
-            return Promise.reject(error);
-          }
+          });
 
           // We don't need to get the instance again after updating the
           // associations, as navigation links do not include any association
