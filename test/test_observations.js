@@ -5,6 +5,7 @@ import {
   LocationsEntity,
   observations,
   featuresOfInterest,
+  datastream,
   datastreams,
   ObservationsEntity,
   DatastreamsEntity
@@ -28,6 +29,23 @@ commonTests(observations, 8885, mandatory, optional).then(tester => {
         Promise.all(toDestroy.map(name => {
           return models[name].destroy({ where: {} });
         })).then(() => done());
+      });
+    });
+
+    describe('POST to association URL', () => {
+      it('should return 201 when creating a Observation, pointing to an ' +
+         'association URL', done => {
+        db().then(models => {
+          models[datastreams].create(DatastreamsEntity).then(relation => {
+            let body = Object.assign({}, ObservationsEntity);
+            Reflect.deleteProperty(body, datastream);
+            const url = '/v1.0/Datastreams(' + relation.id + ')/Observations';
+            tester.postSuccess(done, body, {
+              'Observations': { count: 1 },
+              'Datastreams': { count: 1 }
+            }, url);
+          });
+        });
       });
     });
 
@@ -70,9 +88,9 @@ commonTests(observations, 8885, mandatory, optional).then(tester => {
 
       xit('should return 201 when linking a Datastream with Location', done => {
         db().then(models => {
-          const datastream = Object.assign({}, DatastreamsEntity);
-          datastream.Thing.Locations = LocationsEntity;
-          models[datastreams].create(datastream).then(relation => {
+          const datastreamEntity = Object.assign({}, DatastreamsEntity);
+          datastreamEntity.Thing.Locations = LocationsEntity;
+          models[datastreams].create(datastreamEntity).then(relation => {
             let body = Object.assign({}, ObservationsEntity);
             body.Datastream = {
               '@iot.id': relation.id
