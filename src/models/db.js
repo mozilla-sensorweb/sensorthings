@@ -4,25 +4,22 @@
 
 'use strict';
 
+import Association      from './association';
 import fs               from 'fs';
 import path             from 'path';
 import Sequelize        from 'sequelize';
-import { getModelName } from '../utils'
 
 import {
   entities,
-  featureOfInterest,
   integrityConstrains,
-  iotId
+  iotId,
+  limit
 } from '../constants';
 
 import {
   BAD_REQUEST,
-  ERRNO_BAD_REQUEST,
   ERRNO_INLINE_CONTENT_NOT_ALLOWED,
   ERRNO_INVALID_ASSOCIATION,
-  ERRNO_MANDATORY_ASSOCIATION_MISSING,
-  INTERNAL_ERROR,
   NOT_FOUND
 } from '../errors';
 
@@ -44,7 +41,7 @@ let deferreds = [];
 let state = IDLE;
 let db    = null;
 
-module.exports = config => {
+export default config => {
   if (state === READY) {
     return Promise.resolve(db);
   }
@@ -71,7 +68,8 @@ module.exports = config => {
 
   fs.readdirSync(__dirname)
     .filter(file => {
-      return (file.indexOf('.js') !== 0);
+      return (file.indexOf('.js') !== 0 &&
+              file !== 'association.js');
     })
     .forEach(file => {
       const model = sequelize.import(path.join(__dirname, file));
@@ -92,299 +90,6 @@ module.exports = config => {
     return modelName;
   }
 
-  const applyAssociation = (transaction, instance,
-                            modelToAssociateWith,
-                            association,
-                            associatedEntityId,
-                            associatedEntityIdOverride,
-                            exclude) => {
-    return modelToAssociateWith.findById(associatedEntityId, {
-      attributes: { exclude },
-      transaction
-    }).then(found => {
-      if (!found) {
-        return Promise.reject({
-          name: BAD_REQUEST,
-          errno: ERRNO_INVALID_ASSOCIATION,
-          errors: 'Invalid association. ' +
-                  modelToAssociateWith.options.name.singular + ' with id ' +
-                  associatedEntityId + ' not found'
-        });
-      }
-
-      if (association.isMultiAssociation) {
-        return instance[association.accessors.add](
-          associatedEntityIdOverride || found,
-          { transaction }
-        );
-      }
-      return instance[association.accessors.set](
-        associatedEntityIdOverride || found,
-        { transaction }
-      );
-    });
-  };
-
-  /*
-   * Finds or creates an specific entity and associates it to the
-   * given instance.
-   */
-  const createAssociation = (transaction, instance,
-                             modelToAssociateWith,
-                             association,
-                             associatedEntity, exclude) => {
-    const associatedEntityId = associatedEntity[iotId];
-    const attributes = Object.keys(associatedEntity);
-
-    if (attributes.length === 1 && associatedEntityId) {
-      // According to section 10.2.1.1, if the only parameter of a linked entity
-      // in the body is '@iot.id', we need to associate that entity to the
-      // recently created instance.
-      return applyAssociation(transaction, instance,
-                              modelToAssociateWith,
-                              association,
-                              associatedEntityId,
-                              undefined,
-                              exclude);
-    }
-
-    // According to section 10.2.1.2, if any parameter other than '@iot.id' is
-    // sent in a linked entity (even if it also includes @iot.id), we need to
-    // create a new instance of the associated entity.
-    Reflect.deleteProperty(associatedEntity, 'id');
-    return instance[association.accessors.create](
-      associatedEntity, { transaction }
-    ).then(function onAssociationCreated() {
-      // The Promise here resolves with `instance` which is not the associated
-      // instance that we just created and that we need to continue looking
-      // for deeper associations.
-      const associatedInstance = this;
-      if (!associatedInstance) {
-        return Promise.reject({
-          name: BAD_REQUEST,
-          errno: ERRNO_INVALID_ASSOCIATION,
-          errors: 'Could not create entity with body ' + associatedEntity
-        });
-      }
-      // There may be other entities to be associated inside the
-      // recently created entity. This is what we call "deep insert".
-      //
-      // For example, we may have a request like
-      //
-      // POST /v1.0/ModelA
-      // {
-      //   modelAproperty: 'whatever',
-      //   ModelB: {
-      //     modelBproperty: 'whatever'
-      //     ModelC: {
-      //       '@iot.id': 1
-      //     }
-      //   }
-      // }
-      //
-
-      // Given a POST to modelA with an inline entity modelB, the implicit
-      // association between modelA and modelB needs to be reflected in the
-      // inline entity, in order to avoid mandatory association issues.
-      try {
-        const modelA = instance.$modelOptions.name.plural;
-        const associationsOfModelB = association.target.associations;
-        Object.keys(associationsOfModelB).forEach(associationName => {
-          if (getModelName(associationName) === modelA) {
-            if (associatedEntity[associationName]) {
-              throw Object.create({
-                name: BAD_REQUEST,
-                errno: ERRNO_BAD_REQUEST,
-                errors: 'Could not create entity with body ' + associatedEntity
-              });
-            }
-            associatedEntity[associationName] = { '@iot.id': instance.id }
-          }
-        });
-      } catch(error) {
-        return Promise.reject(error);
-      }
-
-      // In this case, after creating the instance of ModelB, we need
-      // to process the body of ModelB to see if there are related entites
-      // in it, like modelC.
-      return maybeCreateAssociation(transaction, associatedInstance,
-                                    { body: associatedEntity }, exclude);
-    });
-  }
-
-  /*
-   * Private method that converts a Location into a FeatureOfInterest
-  */
-  const featureOfInterestFromLocation = location => {
-    if (!location) {
-      return null;
-    }
-
-    const feature = Object.assign({}, location);
-    feature.feature = Object.assign({}, feature.location);
-    Reflect.deleteProperty(feature, 'location');
-    return feature;
-  }
-
-  /*
-   * Method to check if the recently created instance needs to be associated
-   * with any other entity.
-   * An association can happen because:
-   *
-   * - The URL is like /v1.0/Things(1)/Locations, where the recently created
-   *   instance is Location and Things(1) is the entity to be associated to
-   *   Location. In this case, req.lastResource will contain:
-   *   { model: Things, id: 1 }
-   *
-   * - The request body contains inline entities or references to existing
-   *   entities. For example:
-   *
-   * {
-   *   property1: 'property1',
-   *   Entity: {
-   *     property2: 'property2'
-   *   }
-   * }
-   *
-   * {
-   *   property1: 'property1',
-   *   Entity: {
-   *     '@iot.id': 1
-   *   }
-   * }
-   *
-   * In case that there are inline entities, these entities will need to be
-   * created before applying the association.
-   *
-   * In case that there are references to existing entities, we need to check
-   * that the referenced entity actually exist before applying the association.
-   *
-   */
-  const maybeCreateAssociation = (transaction, instance, req, exclude) => {
-    const modelName = instance.$modelOptions.name.plural;
-    // relations holds the list of all possible relations for the recently
-    // created entity (instance).
-    const relations = db[modelName].associations;
-    if (Object.keys(relations).length <= 0) {
-      // Nothing to link
-      return Promise.resolve(instance);
-    }
-
-    let promises = [];
-
-    // Create associations defined in the url.
-    //
-    // req.lastResource contains the model and id of the previous resource
-    // defined in the url if any exists. So for example, for a request
-    // with URL Things(1)/Locations, lastResource contains model 'Things'
-    // and id 1. In this case we need to associate the recently created
-    // Locations (instance variable) to the Thing with id 1.
-    const lastResource = req.lastResource;
-    if (lastResource) {
-      if (!lastResource.model || !lastResource.id) {
-        return Promise.reject({
-          name: INTERNAL_ERROR,
-          message: 'Malformed lastResource'
-        });
-      }
-
-      const modelToAssociateWith = lastResource.model;
-      const association = relations[lastResource.associationName] ||
-                          relations[entities[lastResource.associationName]];
-      promises.push(createAssociation(transaction, instance,
-                                      modelToAssociateWith,
-                                      association,
-                                      { '@iot.id': lastResource.id },
-                                      exclude));
-    }
-
-    // Create associations defined in the request body.
-    //
-    // The request body may also contain associated entities defined inline or
-    // referencing a previously created entity by its id.
-    //
-    // For example.
-    //
-    // POST /Observations
-    // {
-    //   "Datastream": {
-    //     "@iot.id": 1
-    //   },
-    //   "phenomenonTime": “2013-04-18T16:15:00-07:00",
-    //   "result": 124,
-    //   "FeatureOfInterest": {
-    //     "@iot.id": 2
-    //     }
-    //   }
-    // }
-    //
-    // In this case, at this point we have already created the Observation
-    // with the given phenomenonTime and result. Now we need to associate
-    // to it the existing Datastream with id 1 and the existing
-    // FeaturesOfInterest with id 2, if they really exist.
-    //
-    Object.keys(relations).forEach(associationName => {
-      const association = relations[associationName];
-      let body = req.body[associationName];
-
-      // In the case of creating an Observation whose FeatureOfInterest is the
-      // Thing’s Location (that means the Thing entity has a related Location
-      // entity), the request of creating the Observation SHOULD NOT include a
-      // link to a FeatureOfInterest entity. The service will first
-      // automatically create a FeatureOfInterest entity from the Location of
-      // the Thing and then link to the Observation.
-      if (associationName === featureOfInterest) {
-        let location;
-        try {
-          location = req.body.Datastream.Thing.Locations;
-        } catch(error) {
-          location = null;
-        }
-        body = body || featureOfInterestFromLocation(location);
-      }
-
-      // For each possible association we check if the request body contains
-      // any reference to the association model.
-      if (!body) {
-        // Issue #137: When creating an Observation without FeatureOfInterest,
-        // we should extract it from Locations
-        if (association.mandatory) {
-          throw Object.create({
-            name: BAD_REQUEST,
-            errno: ERRNO_MANDATORY_ASSOCIATION_MISSING,
-            errors: 'Missing mandatory association: ' + associationName
-          });
-        }
-        return;
-      }
-
-      const isList = Array.isArray(body);
-
-      if (isList && !association.isMultiAssociation) {
-        throw Object.create({
-          name: BAD_REQUEST,
-          errno: ERRNO_INVALID_ASSOCIATION,
-          errors: 'Cannot use arrays for this association type'
-        });
-      }
-
-      const associatedEntities = isList ? body : [body];
-      const pluralName = association.options.name.plural;
-      const modelToAssociateWith = db[associationName] || db[pluralName];
-
-      associatedEntities.forEach(associatedEntity => {
-        promises.push(createAssociation(transaction, instance,
-                                        modelToAssociateWith,
-                                        association,
-                                        associatedEntity,
-                                        exclude));
-      });
-    });
-
-    return Promise.all(promises).then(() => instance);
-  }
-
   /*
    * Transaction method that links all the associated models in the body
    * for an specific model. It returns a promise that resolves with the
@@ -395,8 +100,171 @@ module.exports = config => {
       return db[modelName].create(req.body, {
         transaction
       }).then(instance => {
-        return maybeCreateAssociation(transaction, instance, req, exclude);
+        return Association.maybeCreate(transaction, instance,
+                                       req, exclude);
       });
+    });
+  };
+
+  const getById = (modelName, req, queryOptions) => {
+    // req.params[1] may contain a property name.
+    //
+    // For example, for a URL like /v1.0/Things(1)/name, req.params[1]
+    // would be 'name'.
+    const property = req.params[1];
+    if (property) {
+      queryOptions.attributes.include = [ property ];
+    }
+
+    return db[modelName].findById(req.params[0], queryOptions)
+    .then(instance => {
+      if (!instance) {
+        return Promise.reject({
+          name: NOT_FOUND,
+        });
+      }
+
+      const options = {
+        exclude: queryOptions.attributes.exclude,
+        ref: req.params[3]
+      };
+
+      if (property) {
+        // If the value of the property is null, it should respond 204
+        if (!instance[property]) {
+          return Promise.resolve({
+            code: 204
+          });
+        }
+
+        let body;
+        const value = req.params[2];
+        if (value === '$value') {
+          // 9.2.5 Usage 5: address to the value of an entity’s property.
+          body = instance[property];
+        } else {
+          // 9.2.4 Usage 4: address to a property of an entity.
+          body = {};
+          body[property] = instance[property];
+        }
+        return Promise.resolve({
+          code: 200,
+          body,
+          options
+        });
+      }
+
+      return Promise.resolve({
+        code: 200,
+        instance,
+        options
+      });
+    }).catch(() => {
+      return Promise.reject({
+        name: NOT_FOUND
+      });
+    });
+  };
+
+  const get = (modelName, req, queryOptions) => {
+    const lastResource = req.lastResource;
+    if (lastResource) {
+      // lastResource is an object of this form:
+      // {
+      //   model <Sequelize Model>,
+      //   id: <String>
+      // }
+      //
+      // If it is set, we need to query the database to obtain all the
+      // instances of the `modelName` model that are associated to the
+      // entity defined by lastResource.
+      //
+      // For ex. on a request like
+      // http://localhost:8080/v1.0/Things(1)/Locations
+      // lastResource would be
+      // {
+      //   model: Things,
+      //   id: 1
+      // }
+      //
+      // So we would need to get all Locations associated to the Thing with
+      // id 1.
+      //
+      queryOptions.include = [{
+        model: lastResource.model,
+        where: { id: lastResource.id }
+      }];
+      queryOptions.attributes.exclude = queryOptions.attributes.exclude.concat([
+        lastResource.model.options.name.plural
+      ]);
+    }
+
+    const options = {
+      exclude: queryOptions.attributes.exclude,
+      ref: req.params[3],
+      top: queryOptions.limit,
+      skip: queryOptions.offset,
+      count: req.odata && req.odata.$count
+    };
+
+    return db[modelName].findAndCountAll(queryOptions).then(result => {
+      const singularName = entities[modelName];
+      let instance = result.rows;
+      if (lastResource && lastResource.model.associations[singularName]) {
+        // If the association with the singular name exists, it means
+        // that is a single association.
+        instance = result.rows[0];
+      }
+      options.totalCount = result.count;
+      return Promise.resolve({
+        code: 200,
+        instance,
+        options
+      });
+    });
+  };
+
+  db.getInstance = (modelName, req, exclude) => {
+    return db.sequelize.transaction(transaction => {
+      // By default we set a limit of 100 entities max.
+      const top = req.odata && req.odata.$top && req.odata.$top < limit ?
+                  req.odata.$top : limit;
+      const skip = req.odata && req.odata.$skip;
+
+      let queryOptions = {
+        transaction,
+        limit: top,
+        offset: skip,
+        attributes: { exclude }
+      };
+
+      // req.params[0] may contain the id of the final resource from a URL of
+      // this form.
+      //
+      // '[/:Resource(n)]n times/FinalResource(id)?/property?/($value | $ref)?
+      //
+      // For example, for a URL like /v1.0/Things(1)/Locations(2),
+      // req.params[0] would be 2.
+      const id = req.params && req.params[0];
+
+      if (id) {
+        // If the id is present in the request, we may be handling one of these
+        // two resource paths:
+        // * 9.2.5 Usage 5: address to the value of an entity’s property.
+        // * 9.2.4 Usage 4: address to a property of an entity.
+        return getById(modelName, req, queryOptions);
+      }
+
+      // Otherwise, we may be handling one of three possible resource paths:
+      // 1. If no lastResource is set, we implement 9.2.2 Usage 2: address to
+      //    a collection of entities. For ex.
+      //    http://example.org/v1.0/ObservedProperties
+      // 2. If lastResource is set, we implement:
+      //    * 9.2.6 Usage 6: address to a navigation prop (navigationLink)
+      //    For ex. http://example.org/v1.0/Datastreams(1)/Observations
+      //    * 9.2.7 Usage 7: address to an associationLink
+      //    For ex. http://example.org/v1.0/Datastreams(1)/Observations/$ref
+      return get(modelName, req, queryOptions);
     });
   };
 
@@ -467,12 +335,10 @@ module.exports = config => {
               }
 
               promises.push(
-                applyAssociation(transaction,
-                                 instance,
-                                 association.target,
-                                 association,
-                                 id, id,
-                                 exclude)
+                Association.applyAssociation(transaction, instance,
+                                             association.target,
+                                             association, id, id,
+                                             exclude)
               );
             });
           });

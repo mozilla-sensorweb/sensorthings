@@ -34,6 +34,7 @@
     "case": "^1.4.1",
     "express": "^4.14.0",
     "morgan-body": "^0.9.5",
+    "odata-parser": "^1.4.1",
     "pg": "^6.1.0",
     "sequelize": "^3.24.4"
   },

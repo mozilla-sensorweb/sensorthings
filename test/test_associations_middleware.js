@@ -9,7 +9,7 @@ import app              from './server';
 import db               from '../src/models/db';
 import should           from 'should';
 import supertest        from 'supertest';
-import { getModelName } from '../src/utils'
+import { getModelName } from '../src/utils';
 
 import * as CONST from './constants';
 import * as ERR   from '../src/errors';
