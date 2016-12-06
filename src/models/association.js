@@ -219,13 +219,11 @@ const maybeCreate = (transaction, instance, req, exclude) => {
         });
       }
 
-      const modelToAssociateWith = lastResource.model;
-      const association = relations[lastResource.associationName] ||
-                          relations[entities[lastResource.associationName]];
-      promises.push(
-        create(transaction, instance, modelToAssociateWith, association,
-               { '@iot.id': lastResource.id }, exclude)
-      );
+      const associationName = relations[lastResource.associationName] ?
+                              lastResource.associationName :
+                              entities[lastResource.associationName];
+
+      req.body[associationName] = { '@iot.id': lastResource.id };
     }
 
     // Create associations defined in the request body.
