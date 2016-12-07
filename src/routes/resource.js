@@ -30,8 +30,8 @@ module.exports = function resource(endpoint, exclude, version) {
   let router = express.Router({ mergeParams: true });
 
   router.get('', (req, res) => {
-    const prepath = req.protocol + '://' + req.hostname + ':' +
-                    req.socket.localPort + '/' + version + '/';
+    const protocol = req.secure ? 'https' : 'http';
+    const prepath = protocol + '://' + req.headers.host + '/' + version + '/';
     db().then(models => {
       models.getInstance(endpoint, req, exclude).then(result => {
         if (result.body) {
@@ -55,8 +55,8 @@ module.exports = function resource(endpoint, exclude, version) {
                           'Ids are not allowed on POST requests');
     }
 
-    const prepath = req.protocol + '://' + req.hostname + ':' +
-                    req.socket.localPort + '/' + version + '/';
+    const protocol = req.secure ? 'https' : 'http';
+    const prepath = protocol + '://' + req.headers.host + '/' + version + '/';
     db().then(models => {
       models.createInstance(endpoint, req, exclude).then(instance => {
         res.location(prepath + endpoint + '(' + instance.id + ')');
@@ -69,8 +69,8 @@ module.exports = function resource(endpoint, exclude, version) {
   });
 
   router.patch('', (req, res) => {
-    const prepath = req.protocol + '://' + req.hostname + ':' +
-                    req.socket.localPort + '/' + version + '/';
+    const protocol = req.secure ? 'https' : 'http';
+    const prepath = protocol + '://' + req.headers.host + '/' + version + '/';
     const id = req.params && req.params[0];
     if (!id) {
       return ERR.ApiError(res, 404, ERR.ERRNO_RESOURCE_NOT_FOUND,
