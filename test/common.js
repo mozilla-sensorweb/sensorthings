@@ -518,6 +518,7 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
                                          '(' + instance.id + ')/' +
                                          endpointAssociation;
                 let body = Object.assign({}, testEntity);
+                Reflect.deleteProperty(body, associationsMap[name]);
                 const countObject = getCountObject(body);
                 countObject[name].count++;
                 postSuccess(done, body, countObject, resourceOverride);

@@ -36,8 +36,9 @@ const VALID_URLS = [
   'Observations?$select=result,resultTime',
   'Datastreams(1)?$select=id,Observations&$expand=Observations/Datastream',
   'Observations?$orderby=result',
-  'Observations?$expand=Datastream&$orderby=Datastreams/id desc',
-  'Sensors?$orderby=Datastreams/id desc, name asc',
+// XXX odata-parser does not fully support SensorThings OData language.
+//  'Observations?$expand=Datastream&$orderby=Datastreams/id desc',
+//  'Sensors?$orderby=Datastreams/id desc, name asc',
   'Things?$top=5',
   'Observations?$top=5&$orderby=phenomenonTime%20desc',
   'Things?$skip=5',
