@@ -1,4 +1,5 @@
 import fs         from 'fs';
+import odata      from 'odata-parser';
 import path       from 'path';
 import * as ERR   from '../errors';
 
@@ -15,12 +16,25 @@ export default (req, res, next) => {
     return next();
   }
 
-  queryParams.forEach(param => {
-    if (!parsers[param] || !parsers[param].validate(req.query[param])) {
-      return ERR.ApiError(res, 400, ERR.ERRNO_INVALID_QUERY_STRING,
-                          ERR.BAD_REQUEST, param);
-    }
-  });
+  try {
+    queryParams.forEach(param => {
+      if (!parsers[param] || !parsers[param].validate(req.query[param])) {
+        throw param;
+      }
+    });
+  } catch (param) {
+    return ERR.ApiError(res, 400, ERR.ERRNO_INVALID_QUERY_STRING,
+                        ERR.BAD_REQUEST, param);
+  }
+
+  try {
+    const decodedQuery =  decodeURIComponent(req.originalUrl.split('?').pop());
+    // XXX odata-parser does not fully support SensorThings OData language.
+    req.odata = odata.parse(decodedQuery);
+  } catch(e) {
+    return ERR.ApiError(res, 400, ERR.ERRNO_INVALID_QUERY_STRING,
+                        ERR.BAD_REQUEST, e);
+  }
 
   next();
 }
