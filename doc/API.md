@@ -109,17 +109,73 @@ The currently-defined error responses are:
 ## GET /
 ### Request
 ```ssh
+curl -X GET -H "Cache-Control: no-cache" "http://localhost:8080/v1.0"
 ```
 ### Response
 ```ssh
+{
+  "value": [
+    {
+      "name": "Datastreams",
+      "url": "http://localhost:8080/v1.0/Datastreams"
+    },
+    {
+      "name": "FeaturesOfInterest",
+      "url": "http://localhost:8080/v1.0/FeaturesOfInterest"
+    },
+    {
+      "name": "HistoricalLocations",
+      "url": "http://localhost:8080/v1.0/HistoricalLocations"
+    },
+    {
+      "name": "Locations",
+      "url": "http://localhost:8080/v1.0/Locations"
+    },
+    {
+      "name": "Observations",
+      "url": "http://localhost:8080/v1.0/Observations"
+    },
+    {
+      "name": "ObservedProperties",
+      "url": "http://localhost:8080/v1.0/ObservedProperties"
+    },
+    {
+      "name": "Sensors",
+      "url": "http://localhost:8080/v1.0/Sensors"
+    },
+    {
+      "name": "Things",
+      "url": "http://localhost:8080/v1.0/Things"
+    }
+  ]
+}
 ```
 
 ## GET /Things
 ### Request
 ```ssh
+curl -X GET -H "Cache-Control: no-cache" "http://localhost:8080/v1.0/Things"
 ```
 ### Response
 ```ssh
+{
+  "@iot.count": 1,
+  "value": [
+    {
+      "@iot.selfLink": "http://localhost:8080/v1.0/Things(1)",
+      "@iot.id": "1",
+      "Locations@iot.navigationLink": "http://localhost:8080/v1.0/Things(1)/Locations",
+      "HistoricalLocations@iot.navigationLink": "http://localhost:8080/v1.0/Things(1)/HistoricalLocations",
+      "Datastreams@iot.navigationLink": "http://localhost:8080/v1.0/Things(1)/Datastreams",
+      "name": "SensorWebThing",
+      "description": "A SensorWeb thing",
+      "properties": {
+        "owner": "Mozilla",
+        "organization": "Mozilla"
+      }
+    }
+  ]
+}
 ```
 
 ## GET /Things(:id)
@@ -128,17 +184,52 @@ ___Parameters___
 
 ### Request
 ```ssh
+curl -X GET -H "Cache-Control: no-cache" "http://localhost:8080/v1.0/Things(1)"
 ```
 ### Response
 ```ssh
+{
+  "@iot.selfLink": "http://localhost:8080/v1.0/Things(1)",
+  "@iot.id": "1",
+  "Locations@iot.navigationLink": "http://localhost:8080/v1.0/Things(1)/Locations",
+  "HistoricalLocations@iot.navigationLink": "http://localhost:8080/v1.0/Things(1)/HistoricalLocations",
+  "Datastreams@iot.navigationLink": "http://localhost:8080/v1.0/Things(1)/Datastreams",
+  "name": "SensorWebThing",
+  "description": "A SensorWeb thing",
+  "properties": {
+    "owner": "Mozilla",
+    "organization": "Mozilla"
+  }
+}
 ```
 
 ## POST /Things
 ### Request
 ```ssh
+curl -X POST -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d '{
+  "description": "A SensorWeb thing",
+  "name":"SensorWebThing",
+  "properties": {
+    "organization": "Mozilla",
+    "owner": "Mozilla"
+  }
+}' "http://localhost:8080/v1.0/Things"
 ```
 ### Response
 ```ssh
+{
+  "@iot.selfLink": "http://localhost:8080/v1.0/Things(1)",
+  "@iot.id": "1",
+  "Locations@iot.navigationLink": "http://localhost:8080/v1.0/Things(1)/Locations",
+  "HistoricalLocations@iot.navigationLink": "http://localhost:8080/v1.0/Things(1)/HistoricalLocations",
+  "Datastreams@iot.navigationLink": "http://localhost:8080/v1.0/Things(1)/Datastreams",
+  "description": "A SensorWeb thing",
+  "name": "SensorWebThing",
+  "properties": {
+    "owner": "Mozilla",
+    "organization": "Mozilla"
+  }
+}
 ```
 
 ## PATCH /Things(:id)
@@ -147,9 +238,30 @@ ___Parameters___
 
 ### Request
 ```ssh
+curl -X PATCH -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d '{
+  "description": "A SensorWeb thing",
+  "name":"New SensorWebThing",
+  "properties": {
+    "organization": "Mozilla",
+    "owner": "Mozilla"
+  }
+}' "http://localhost:8080/v1.0/Things(1)"
 ```
 ### Response
 ```ssh
+{
+  "@iot.selfLink": "http://localhost:8080/v1.0/Things(1)",
+  "@iot.id": "1",
+  "Locations@iot.navigationLink": "http://localhost:8080/v1.0/Things(1)/Locations",
+  "HistoricalLocations@iot.navigationLink": "http://localhost:8080/v1.0/Things(1)/HistoricalLocations",
+  "Datastreams@iot.navigationLink": "http://localhost:8080/v1.0/Things(1)/Datastreams",
+  "name": "New SensorWebThing",
+  "description": "A SensorWeb thing",
+  "properties": {
+    "owner": "Mozilla",
+    "organization": "Mozilla"
+  }
+}
 ```
 
 ## DELETE /Things(:id)
@@ -158,9 +270,18 @@ ___Parameters___
 
 ### Request
 ```ssh
+curl -X DELETE -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d '{
+  "description": "A SensorWeb thing",
+  "name":"SensorWebThing",
+  "properties": {
+    "organization": "Mozilla",
+    "owner": "Mozilla"
+  }
+}' "http://localhost:8080/v1.0/Things(1)"
 ```
 ### Response
 ```ssh
+Response body empty. Response Headers: Status Code 204 No Content
 ```
 
 
