@@ -7,10 +7,12 @@
  */
 
 import {
+  hostHeader,
   iotCount,
   iotId,
   iotNextLink,
   navigationLink,
+  protocolHeader
 } from './constants';
 
 const FIELDS_TO_FILTER = [
@@ -47,7 +49,16 @@ const formatItem = (item, associations, prepath, options) => {
   return formatedItem;
 }
 
-const generate = (resource, associations, prepath, options) => {
+const getPrepath = (req, version) => {
+  const protocol = req.headers[protocolHeader] || req.protocol;
+  const host = req.headers[hostHeader] || req.headers.host;
+  const prepath = protocol + '://' + host + '/' + version + '/';
+  return prepath;
+}
+
+const generate = (resource, associations, req, version, options) => {
+  const prepath = getPrepath(req, version);
+
   if (resource && Array.isArray(resource)) {
     const { top, skip, count, totalCount } = options;
 
@@ -95,5 +106,6 @@ const generate = (resource, associations, prepath, options) => {
 }
 
 module.exports = {
-  generate
+  generate,
+  getPrepath
 };
