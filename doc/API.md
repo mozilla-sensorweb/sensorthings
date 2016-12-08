@@ -774,7 +774,7 @@ Response body empty. Response Headers: Status Code 204 No Content
 ## GET /ObservedProperties
 ### Request
 ```ssh
-curl -X GET -H "Cache-Control: no-cache" "http://localhost:8080/v1.0/ObservedProperty"
+curl -X GET -H "Cache-Control: no-cache" "http://localhost:8080/v1.0/ObservedProperties"
 ```
 ### Response
 ```ssh
@@ -840,7 +840,7 @@ ___Parameters___
 
 ### Request
 ```ssh
-curl -X POST -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d '{
+curl -X PATCH -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d '{
   "name": "New PM 2.5 Observation",
   "description": "Particle pollution, also called particulate matter or PM, is a mixture of solids and liquid droplets floating in the air.",
   "definition": "https://airnow.gov/index.cfm?action=aqibasics.particle"
