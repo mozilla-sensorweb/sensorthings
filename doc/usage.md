@@ -258,7 +258,6 @@ curl -X POST -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d
   }
 }
 ```
-```
 ### 7. Create Observations associated to the Datastream and FeatureOfInterest.
 #### Request
 ```ssh
