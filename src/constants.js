@@ -16,13 +16,16 @@ export const featureOfInterestNavigationLink =
 export const featuresOfInterestNavigationLink =
   featuresOfInterest + navigationLink;
 
+export const historicalLocation = 'HistoricalLocation';
 export const historicalLocations = 'HistoricalLocations';
 export const historicalLocationsNavigationLink =
   historicalLocations + navigationLink;
 
+export const location = 'Location';
 export const locations = 'Locations';
 export const locationsNavigationLink = locations + navigationLink;
 
+export const observation = 'Observation';
 export const observations = 'Observations';
 export const observationsNavigationLink = observations + navigationLink;
 
@@ -44,14 +47,25 @@ export const thingNavigationLink = thing + navigationLink;
 export const thingsNavigationLink = things + navigationLink;
 
 export const entities = {
-  'Datastreams': 'Datastream',
-  'FeaturesOfInterest': 'FeatureOfInterest',
-  'HistoricalLocations': 'HistoricalLocation',
-  'Locations': 'Location',
-  'Observations': 'Observation',
-  'ObservedProperties': 'ObservedProperty',
-  'Sensors': 'Sensor',
-  'Things': 'Thing'
+  'Datastreams': datastream,
+  'FeaturesOfInterest': featuresOfInterest,
+  'HistoricalLocations': historicalLocation,
+  'Locations': location,
+  'Observations': observation,
+  'ObservedProperties': observedProperty,
+  'Sensors': sensor,
+  'Things': thing
+};
+
+export const singularEntities = {
+  'Datastream': datastreams,
+  'FeatureOfInterest': featuresOfInterest,
+  'HistoricalLocation': historicalLocations,
+  'Location': locations,
+  'Observation': observations,
+  'ObservedProperty': observedProperties,
+  'Sensor': sensors,
+  'Thing': things
 };
 
 export const protocolHeader = 'x-forwarded-proto';

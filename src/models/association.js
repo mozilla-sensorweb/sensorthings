@@ -6,7 +6,7 @@
 
 import db from './db';
 
-import { getModelName } from '../utils';
+import { getModelName, parseEntities } from '../utils';
 
 import {
   entities,
@@ -21,7 +21,6 @@ import {
   ERRNO_MANDATORY_ASSOCIATION_MISSING,
   INTERNAL_ERROR
 } from '../errors';
-
 
 /*
  * Converts a Location into a FeatureOfInterest
@@ -74,8 +73,8 @@ const applyAssociation = (transaction, instance,
  * Finds or creates an specific entity and associates it to the
  * given instance.
  */
-const create = (transaction, instance, modelToAssociateWith,
-                association, associatedEntity, exclude) => {
+const create = (transaction, instance, modelToAssociateWith, association,
+                associatedEntity, parsedEntities, exclude) => {
   const associatedEntityId = associatedEntity[iotId];
   const attributes = Object.keys(associatedEntity);
 
@@ -152,7 +151,8 @@ const create = (transaction, instance, modelToAssociateWith,
     // to process the body of ModelB to see if there are related entites
     // in it, like modelC.
     return maybeCreate(transaction, associatedInstance,
-                       { body: associatedEntity }, exclude);
+                       { body: associatedEntity },
+                       parsedEntities, exclude);
   });
 }
 
@@ -190,7 +190,7 @@ const create = (transaction, instance, modelToAssociateWith,
  * that the referenced entity actually exist before applying the association.
  *
  */
-const maybeCreate = (transaction, instance, req, exclude) => {
+const maybeCreate = (transaction, instance, req, parsedEntities, exclude) => {
   return db().then(models => {
     const modelName = instance.$modelOptions.name.plural;
     // relations holds the list of all possible relations for the recently
@@ -250,7 +250,6 @@ const maybeCreate = (transaction, instance, req, exclude) => {
     // with the given phenomenonTime and result. Now we need to associate
     // to it the existing Datastream with id 1 and the existing
     // FeaturesOfInterest with id 2, if they really exist.
-    //
     Object.keys(relations).forEach(associationName => {
       const association = relations[associationName];
       let body = req.body[associationName];
@@ -264,7 +263,7 @@ const maybeCreate = (transaction, instance, req, exclude) => {
       if (associationName === featureOfInterest) {
         let location;
         try {
-          location = req.body.Datastream.Thing.Locations;
+          location = parsedEntities.Location || parsedEntities.Locations[0];
         } catch(error) {
           location = null;
         }
@@ -302,7 +301,8 @@ const maybeCreate = (transaction, instance, req, exclude) => {
       associatedEntities.forEach(associatedEntity => {
         promises.push(
           create(transaction, instance, modelToAssociateWith,
-                association, associatedEntity, exclude)
+                 association, associatedEntity, parsedEntities,
+                 exclude)
         );
       });
     });

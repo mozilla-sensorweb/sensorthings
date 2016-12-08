@@ -9,6 +9,8 @@ import fs               from 'fs';
 import path             from 'path';
 import Sequelize        from 'sequelize';
 
+import { parseEntities } from '../utils';
+
 import {
   entities,
   integrityConstrains,
@@ -100,8 +102,8 @@ export default config => {
       return db[modelName].create(req.body, {
         transaction
       }).then(instance => {
-        return Association.maybeCreate(transaction, instance,
-                                       req, exclude);
+        return Association.maybeCreate(transaction, instance, req,
+                                       parseEntities(req.body), exclude);
       });
     });
   };

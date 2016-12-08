@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-import { entities }  from './constants';
+import { entities, singularEntities }  from './constants';
 
 /*
  * Module with utility shared methods
@@ -96,3 +96,38 @@ exports.getModelName = name => {
   });
   return plural || name;
 }
+
+/*
+ * Parses a request body to get an object with all the entities defined
+ * inside it.
+ */
+const parseEntities = (body, parsed) => {
+  if (!parsed) {
+    parsed = {};
+  }
+
+  body = Array.isArray(body) ? body : [body];
+  body.forEach(bodyPart => {
+    Object.keys(bodyPart).forEach(property => {
+      const isPluralEntity = !!entities[property];
+      const isSingularEntity = !!singularEntities[property];
+
+      if (isPluralEntity) {
+        if (!parsed[property]) {
+          parsed[property] = [];
+        }
+
+        parsed[property] = parsed[property].concat(bodyPart[property]);
+      } else if (isSingularEntity) {
+        parsed[property] = bodyPart[property];
+      }
+
+      if (isPluralEntity || isSingularEntity) {
+        return parseEntities(bodyPart[property], parsed);
+      }
+    });
+  });
+
+  return parsed;
+}
+exports.parseEntities = parseEntities;
