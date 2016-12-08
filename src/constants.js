@@ -54,8 +54,8 @@ export const entities = {
   'Things': 'Thing'
 };
 
-export const protocolHeader = 'X-Forwarded-Proto';
-export const hostHeader = 'X-Forwarded-Server';
+export const protocolHeader = 'x-forwarded-proto';
+export const hostHeader = 'x-forwarded-server';
 
 export const datastreamId = 'DatastreamId';
 export const thingId = 'ThingId';
