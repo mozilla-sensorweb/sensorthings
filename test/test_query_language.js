@@ -148,5 +148,101 @@ db().then(models => {
         });
       });
     });
+
+    describe('$orderby', () => {
+      describe('Only 1 field', () => {
+        const count = 9;
+
+        before(done => {
+          const model = models[modelName];
+          const entity = Object.assign({}, CONST[modelName + 'Entity']);
+          let promises = [];
+          model.destroy({ where: {} }).then(() => {
+            for (let i = 0; i < count; i++) {
+              entity.name = i;
+              promises.push(model.create(entity));
+            }
+            Promise.all(promises).then(() => {
+              done()
+            });
+          });
+        });
+
+        it('should respond with an ascending order', done => {
+          get(modelName + '?$orderby=name')
+          .then(result => {
+            result[CONST.iotCount].should.be.equal(count);
+            // Checking that they are in order
+            for (let i = 0; i < count; i++) {
+              result.value[i].name.should.be.equal(String(i));
+            }
+            done();
+          });
+        });
+
+        it('should respond with a descending order', done => {
+          get(modelName + '?$orderby=name desc')
+          .then(result => {
+            result[CONST.iotCount].should.be.equal(count);
+            // Checking that they are in order
+            let index = 0;
+            for (let i = count - 1; i > -1; i--) {
+              result.value[index].name.should.be.equal(String(i));
+              index++;
+            }
+            done();
+          });
+        });
+      });
+
+      describe('More than 1 field', () => {
+        const count = 9;
+
+        before(done => {
+          const model = models[modelName];
+          const entity = Object.assign({}, CONST[modelName + 'Entity']);
+
+          let promises = [];
+          model.destroy({ where: {} }).then(() => {
+            for (let i = 0; i < count; i++) {
+              entity.name = i < 5 ? '1' : '2';
+              entity.description = (count - i);
+              promises.push(model.create(entity));
+            }
+            Promise.all(promises).then(() => {
+              done()
+            });
+          });
+        });
+
+        it('should order by name and then by description', done => {
+          get(modelName + '?$orderby=name, description')
+          .then(result => {
+            result[CONST.iotCount].should.be.equal(count);
+            // Checking that they are in order
+            for (let i = 0; i < count; i++) {
+              result.value[i].name.should.be.equal(i < 5 ? '1' : '2');
+              const desc = i < 5 ? 5 + i : i - 4;
+              result.value[i].description.should.be.equal(String(desc));
+            }
+            done();
+          });
+        });
+
+        it('should order by name and then descending by description', done => {
+          get(modelName + '?$orderby=name, description desc')
+          .then(result => {
+            result[CONST.iotCount].should.be.equal(count);
+            // Checking that they are in order
+            for (let i = 0; i < count; i++) {
+              result.value[i].name.should.be.equal(i < 5 ? '1' : '2');
+              const desc = count - i;
+              result.value[i].description.should.be.equal(String(desc));
+            }
+            done();
+          });
+        });
+      });
+    });
   });
 });
