@@ -403,13 +403,13 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
             res.header.location.should.be.equal(fullPrepath + path);
             const expectedModels = Object.keys(expected);
             Promise.all(expectedModels.map(name => {
-              return models[name].findAndCountAll().then((result) => {
+              return models[name].findAndCountAll().then(result => {
                 const resultObject = {};
                 resultObject[name] = result;
                 return Promise.resolve(resultObject);
               });
             })).then(results => {
-              results.forEach((result) => {
+              results.forEach(result => {
                 if (result[endpoint]) {
                   const instance = result[endpoint].rows[0];
                   instance.id.should.be.equal(res.body[CONST.iotId]);
