@@ -1,6 +1,7 @@
 import express from 'express';
 
 import { entities } from '../constants';
+import response     from '../response';
 
 let router = express.Router();
 
@@ -46,8 +47,7 @@ let router = express.Router();
  **/
 
 router.get('/', (req, res) => {
-  const prepath = req.protocol + '://' + req.hostname + ':' +
-                  req.socket.localPort + req.baseUrl + '/';
+  const prepath = response.getPrepath(req, req.originalUrl.replace(/\//g, ''));
 
   const value = Object.keys(entities).map(key => {
     return {
