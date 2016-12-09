@@ -9,9 +9,12 @@ import db from './db';
 import { getModelName } from '../utils';
 
 import {
+  datastreams,
   entities,
   featureOfInterest,
-  iotId
+  iotId,
+  sensors,
+  things
 } from '../constants';
 
 import {
@@ -75,7 +78,7 @@ const applyAssociation = (transaction, instance,
  * given instance.
  */
 const create = (transaction, instance, modelToAssociateWith,
-                association, associatedEntity, exclude) => {
+                association, associatedEntity, exclude, thingLocation) => {
   const associatedEntityId = associatedEntity[iotId];
   const attributes = Object.keys(associatedEntity);
 
@@ -152,7 +155,7 @@ const create = (transaction, instance, modelToAssociateWith,
     // to process the body of ModelB to see if there are related entites
     // in it, like modelC.
     return maybeCreate(transaction, associatedInstance,
-                       { body: associatedEntity }, exclude);
+                       { body: associatedEntity }, exclude, thingLocation);
   });
 }
 
@@ -190,7 +193,7 @@ const create = (transaction, instance, modelToAssociateWith,
  * that the referenced entity actually exist before applying the association.
  *
  */
-const maybeCreate = (transaction, instance, req, exclude) => {
+const maybeCreate = (transaction, instance, req, exclude, thingLocation) => {
   return db().then(models => {
     const modelName = instance.$modelOptions.name.plural;
     // relations holds the list of all possible relations for the recently
@@ -262,13 +265,8 @@ const maybeCreate = (transaction, instance, req, exclude) => {
       // automatically create a FeatureOfInterest entity from the Location of
       // the Thing and then link to the Observation.
       if (associationName === featureOfInterest) {
-        let location;
-        try {
-          location = req.body.Datastream.Thing.Locations;
-        } catch(error) {
-          location = null;
-        }
-        body = body || featureOfInterestFromLocation(location);
+        body = body || featureOfInterestFromLocation(thingLocation) ||
+          featureOfInterestFromLocation(req.body.Datastream.Thing.Locations);
       }
 
       // For each possible association we check if the request body contains
@@ -299,10 +297,39 @@ const maybeCreate = (transaction, instance, req, exclude) => {
       const modelToAssociateWith = models[associationName] ||
                                    models[pluralName];
 
+      // For the cases where we are creating an Observation with a missing
+      // FeatureOfInterest, we need to check if there is a Location associated
+      // to the associated Thing and that Location will be the
+      // FeatureOfInterest of this Observation. So we save this Location in the
+      // request object, for following calls to maybeCreate while traversing
+      // the Datastream body looking for Datastream associations.
       associatedEntities.forEach(associatedEntity => {
+        let _thingLocation;
+        if (pluralName === datastreams) {
+          try {
+            // XXX Handle case where entities are references (@iot.id)
+            let locations;
+            switch (modelName) {
+              case things:
+                locations = req.body.Locations;
+                break;
+              case sensors:
+                locations = associatedEntity.Thing.Locations;
+                break;
+              default:
+                break;
+            }
+            _thingLocation = Array.isArray(locations) ?
+                             locations[0] : locations;
+          } catch(e) {
+            _thingLocation = null;
+          }
+        }
+
         promises.push(
           create(transaction, instance, modelToAssociateWith,
-                association, associatedEntity, exclude)
+                 association, associatedEntity, exclude,
+                 thingLocation || _thingLocation)
         );
       });
     });
