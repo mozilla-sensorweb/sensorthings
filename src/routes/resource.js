@@ -30,8 +30,6 @@ module.exports = function resource(endpoint, exclude, version) {
   let router = express.Router({ mergeParams: true });
 
   router.get('', (req, res) => {
-    const protocol = req.secure ? 'https' : 'http';
-    const prepath = protocol + '://' + req.headers.host + '/' + version + '/';
     db().then(models => {
       models.getInstance(endpoint, req, exclude).then(result => {
         if (result.body) {
@@ -40,7 +38,7 @@ module.exports = function resource(endpoint, exclude, version) {
         const instance = result.instance ?
                          response.generate(result.instance,
                                            associations(models),
-                                           prepath, result.options) :
+                                           req, version, result.options) :
                          undefined;
         res.status(result.code).send(instance);
       }).catch(handleModelError(res));
@@ -55,13 +53,12 @@ module.exports = function resource(endpoint, exclude, version) {
                           'Ids are not allowed on POST requests');
     }
 
-    const protocol = req.secure ? 'https' : 'http';
-    const prepath = protocol + '://' + req.headers.host + '/' + version + '/';
     db().then(models => {
+      const prepath = response.getPrepath(req, version);
       models.createInstance(endpoint, req, exclude).then(instance => {
         res.location(prepath + endpoint + '(' + instance.id + ')');
         res.status(201).send(response.generate(instance, associations(models),
-                                               prepath, { exclude }));
+                                               req, version, { exclude }));
       }).catch(handleModelError(res));
     }).catch(() => {
       ERR.ApiError(res, 500, ERR.ERRNO_INTERNAL_ERROR, ERR.INTERNAL_ERROR);
@@ -69,8 +66,6 @@ module.exports = function resource(endpoint, exclude, version) {
   });
 
   router.patch('', (req, res) => {
-    const protocol = req.secure ? 'https' : 'http';
-    const prepath = protocol + '://' + req.headers.host + '/' + version + '/';
     const id = req.params && req.params[0];
     if (!id) {
       return ERR.ApiError(res, 404, ERR.ERRNO_RESOURCE_NOT_FOUND,
@@ -81,9 +76,10 @@ module.exports = function resource(endpoint, exclude, version) {
       Reflect.deleteProperty(req.body, 'id');
       models.updateInstance(endpoint, id, req.body, exclude)
       .then(instance => {
+        const prepath = response.getPrepath(req, version);
         res.location(prepath + endpoint + '(' + id + ')');
         res.status(200).json(response.generate(instance, associations(models),
-                                               prepath, { exclude }));
+                                               req, version, { exclude }));
       }).catch(handleModelError(res));
     }).catch(() => {
       ERR.ApiError(res, 500, ERR.ERRNO_INTERNAL_ERROR, ERR.INTERNAL_ERROR);

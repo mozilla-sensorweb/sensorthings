@@ -230,11 +230,16 @@ export default config => {
       const top = req.odata && req.odata.$top && req.odata.$top < limit ?
                   req.odata.$top : limit;
       const skip = req.odata && req.odata.$skip;
+      const orderBy = (req.odata && req.odata.$orderby) || [];
 
       let queryOptions = {
         transaction,
         limit: top,
         offset: skip,
+        order: orderBy.map(field => {
+          const key = Object.keys(field)[0];
+          return [key, field[key].toUpperCase()];
+        }),
         attributes: { exclude }
       };
 
