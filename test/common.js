@@ -877,10 +877,10 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
 
         const deleteSuccess = (done) => {
           server.delete(resource())
-          .expect(204)
+          .expect(200)
           .end((err, res) => {
             should.not.exist(err);
-            res.status.should.be.equal(204);
+            res.status.should.be.equal(200);
             Promise.all([
               models[endpoint].findAndCountAll()
             ]).then(results => {
@@ -911,7 +911,7 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
           deleteError(done);
         });
 
-        it('should respond 204 if request to delete a ' + endpoint + ' is ' +
+        it('should respond 200 if request to delete a ' + endpoint + ' is ' +
            ' valid', done => {
           deleteSuccess(done);
         });
@@ -952,7 +952,7 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
               });
             }).then(id => {
               server.delete(prepath + endpoint + '(' + id + ')').send()
-              .expect(204)
+              .expect(200)
               .end((err) => {
                 should.not.exist(err);
                 model.findAndCountAll().then(result => {
