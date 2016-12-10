@@ -63,6 +63,24 @@ module.exports = (sequelize, DataTypes) => {
         Thing.belongsToMany(db.Locations, { through: 'ThingLocations' });
         Thing.hasMany(db.HistoricalLocations);
         Thing.hasMany(db.Datastreams);
+        // When a Thing has a new Location, a new HistoricalLocation SHALL
+        // be created and added to the Thing automatically by the service.
+        // The current Location of the Thing SHALL only be added to
+        // HistoricalLocation automatically by the service, and SHALL not
+        // be created as HistoricalLocation directly by user.
+        Thing.associations.Locations.afterAssociation =
+          (transaction, instance, associationId) => {
+          const historicalLocations =
+            Thing.associations.HistoricalLocations;
+          return instance[historicalLocations.accessors.create]({
+            time: Date.now()
+          }, { transaction }).then(historicalLocation => {
+            const locations = db.HistoricalLocations.associations.Locations;
+            return historicalLocation[locations.accessors.add](
+              associationId, { transaction }
+            );
+          });
+        };
       }
     }
   });

@@ -4,7 +4,7 @@
 
 'use strict';
 
-import { encodingTypes } from '../constants';
+import { encodingTypes }   from '../constants';
 
 /**
  * 8.2.2 Location
@@ -80,6 +80,24 @@ module.exports = (sequelize, DataTypes) => {
         Location.belongsToMany(db.HistoricalLocations, {
           through: 'HistoricalLocationsLocations'
         });
+        // When a Thing has a new Location, a new HistoricalLocation SHALL
+        // be created and added to the Thing automatically by the service.
+        // The current Location of the Thing SHALL only be added to
+        // HistoricalLocation automatically by the service, and SHALL not
+        // be created as HistoricalLocation directly by user.
+        Location.associations.Things.afterAssociation =
+          (transaction, instance, associationId) => {
+          const historicalLocations =
+            Location.associations.HistoricalLocations;
+          return instance[historicalLocations.accessors.create]({
+            time: Date.now()
+          }, { transaction }).then(historicalLocation => {
+            const thing = db.HistoricalLocations.associations.Thing;
+            return historicalLocation[thing.accessors.set](associationId, {
+              transaction
+            });
+          });
+        };
       }
     },
     hooks: {
