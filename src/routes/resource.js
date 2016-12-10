@@ -98,7 +98,7 @@ module.exports = function resource(endpoint, exclude, version) {
           return ERR.ApiError(res, 404, ERR.ERRNO_RESOURCE_NOT_FOUND,
                               ERR.NOT_FOUND);
         }
-        res.status(204).send();
+        res.status(200).send();
       });
     }).catch(() => {
       ERR.ApiError(res, 500, ERR.ERRNO_INTERNAL_ERROR, ERR.INTERNAL_ERROR);

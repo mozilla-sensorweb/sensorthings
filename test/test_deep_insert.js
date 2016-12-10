@@ -139,7 +139,7 @@ db().then(models => {
         // the recently inserted Thing. It should delete all associated
         // Datastreams and all associated Observations.
         server.delete(prepath + things + '(' + thingId + ')')
-        .expect(204)
+        .expect(200)
         .end(err => {
           should.not.exist(err);
           fetch(prepath + things).then(res => {
@@ -271,7 +271,7 @@ db().then(models => {
 
       after(done => {
         server.delete(prepath + observations + '(' + observationId + ')')
-        .expect(204)
+        .expect(200)
         .end(err => {
           should.not.exist(err);
           fetch(prepath + observations).then(res => {
