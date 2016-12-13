@@ -69,7 +69,8 @@ export default config => {
   fs.readdirSync(__dirname)
     .filter(file => {
       return (file.indexOf('.js') !== 0 &&
-              file !== 'association.js');
+              file !== 'association.js' &&
+              file !== 'db.js');
     })
     .forEach(file => {
       const model = sequelize.import(path.join(__dirname, file));
