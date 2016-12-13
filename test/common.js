@@ -58,7 +58,7 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
       return body;
     };
 
-    const getCountObject = (body, empty) => {
+    const getCountObject = (url, body, empty, overrides) => {
       let countObject = {};
       countObject[endpoint] = { count: 1 };
 
@@ -90,8 +90,28 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
 
           countObject[modelName].count++;
         }
-
       });
+
+      if (overrides) {
+        Object.keys(overrides).forEach(name => {
+          countObject[name].count = overrides[name](countObject[name].count);
+        });
+      }
+
+      // HistoricalLocations are automagically created when a Location that is
+      // linked to a Thing is created or viceversa.
+      const { things, locations, historicalLocations } = CONST;
+      if (countObject[historicalLocations] && !body[historicalLocations] &&
+          url.indexOf(historicalLocations) === -1) {
+        if (endpoint === locations) {
+          if (countObject[things].count) {
+            countObject[historicalLocations].count = countObject[things].count;
+          }
+        } else {
+          countObject[historicalLocations].count = countObject[locations].count;
+        }
+      }
+
       return countObject;
     }
 
@@ -456,7 +476,7 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
 
         it('should respond 201 if the ' + endpoint + ' is valid', done => {
           let body = Object.assign({}, testEntity);
-          const countObject = getCountObject(body, true);
+          const countObject = getCountObject(resource, body, true);
           postSuccess(done, body, countObject);
         });
 
@@ -501,8 +521,12 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
                 body[associationsMap[name]] = {
                   '@iot.id': relation.id
                 };
-                const countObject = getCountObject(body);
-                countObject[name].count = 2;
+                const overrides = {};
+                overrides[name] = () => {
+                  return 2;
+                }
+                const countObject = getCountObject(resource, body, false,
+                                                   overrides);
                 postSuccess(done, body, countObject);
               });
             });
@@ -519,8 +543,13 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
                                          endpointAssociation;
                 let body = Object.assign({}, testEntity);
                 Reflect.deleteProperty(body, associationsMap[name]);
-                const countObject = getCountObject(body);
-                countObject[name].count++;
+                const overrides = {};
+                overrides[name] = count => {
+                  count += 1;
+                  return count;
+                }
+                const countObject = getCountObject(resourceOverride, body,
+                                                   false, overrides);
                 postSuccess(done, body, countObject, resourceOverride);
               });
             });
@@ -533,7 +562,7 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
               Reflect.deleteProperty(assocEntity, CONST.entities[endpoint]);
               body[associationsMap[name]] = assocEntity;
 
-              const countObject = getCountObject(body);
+              const countObject = getCountObject(resource, body);
               postSuccess(done, body, countObject);
             });
 
@@ -554,8 +583,13 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
                 created.forEach(row => {
                   body[associationsMap[name]].push({ '@iot.id': row.id });
                 });
-                const countObject = getCountObject(body);
-                countObject[name].count = 3;
+
+                const overrides = {};
+                overrides[name] = () => {
+                  return 3;
+                }
+                const countObject = getCountObject(resource, body, false,
+                                                   overrides);
                 postSuccess(done, body, countObject);
               });
             });
@@ -575,7 +609,7 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
               body[associationsMap[name]] = [];
               body[associationsMap[name]].push(assocEntity);
               body[associationsMap[name]].push(assocEntity);
-              const countObject = getCountObject(body);
+              const countObject = getCountObject(resource, body);
 
               postSuccess(done, body, countObject);
             });
