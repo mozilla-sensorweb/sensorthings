@@ -91,7 +91,24 @@ const create = (transaction, instance, modelToAssociateWith,
                             association,
                             associatedEntityId,
                             undefined,
-                            exclude);
+                            exclude).then(result => {
+      if (!association.afterAssociation) {
+        return result;
+      }
+
+      // Sequelize does not allow hooks for associations related actions,
+      // so we allow models to define an 'afterAssociation' function that
+      // will be called after applying an association.
+      // This is used for example by Things and Locations models, to create
+      // HistoricalLocations entities as required by the spec:
+      //   "When a Thing has a new Location, a new HistoricalLocation SHALL
+      //    be created and added to the Thing automatically by the service.
+      //    The current Location of the Thing SHALL only be added to
+      //    HistoricalLocation automatically by the service, and SHALL not
+      //    be created as HistoricalLocation directly by user."
+      return association.afterAssociation(transaction, instance,
+                                          associatedEntityId);
+    });
   }
 
   // According to section 10.2.1.2, if any parameter other than '@iot.id' is
