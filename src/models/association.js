@@ -326,15 +326,16 @@ const maybeCreate = (transaction, instance, req, exclude, thingLocation) => {
           }
         }
 
-        promises.push(
-          create(transaction, instance, modelToAssociateWith,
-                 association, associatedEntity, exclude,
-                 thingLocation || _thingLocation)
-        );
+        promises.push([
+          transaction, instance, modelToAssociateWith, association,
+          associatedEntity, exclude,  thingLocation || _thingLocation
+        ]);
       });
     });
 
-    return Promise.all(promises).then(() => instance);
+    return Promise.all(promises.map(args => {
+      return Reflect.apply(create, undefined, args);
+    })).then(() => instance);
   });
 }
 
