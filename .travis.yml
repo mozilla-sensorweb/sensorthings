@@ -15,7 +15,7 @@ matrix:
   allow_failures:
   - env: TESTS=OGC_TESTS
 before_install:
-- openssl aes-256-cbc -K $encrypted_cbecbf2e8b54_key -iv $encrypted_cbecbf2e8b54_iv
+- openssl aes-256-cbc -K $encrypted_d01e2d6e9c35_key -iv $encrypted_d01e2d6e9c35_iv
   -in id_rsa.enc -out id_rsa -d
 - java -version
 - wget https://raw.githubusercontent.com/creationix/nvm/v0.31.0/nvm.sh -O ~/.nvm/nvm.sh
