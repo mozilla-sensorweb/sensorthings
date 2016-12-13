@@ -15,7 +15,8 @@
     "pretest": "./scripts/pretest.sh",
     "test-nocoverage": "NODE_ENV=test ./node_modules/.bin/mocha --delay --compilers js:babel-register test/test_*.js",
     "test-watch": "nodemon -q -x npm test",
-    "test": "./node_modules/.bin/nyc npm run test-nocoverage && npm run lint"
+    "test": "./node_modules/.bin/nyc npm run test-nocoverage && npm run lint",
+    "gh-pages-travis": "gh-pages-travis"
   },
   "keywords": [
     "sensorthings",
