@@ -11,4 +11,4 @@ echo "Launching SensorThings Test Suite tests"
 $COMMON_PATH/test/TE_BASE/te-install/bin/unix/test.sh -source=sta10/1.0/ctl/sta10-suite.ctl -form=$COMMON_PATH/test/forms/sta10.xml
 
 # Check if there has been failures running OGC tests
-source ./scripts/OGC_tests/check_tests_failures.sh
+# source ./scripts/OGC_tests/check_tests_failures.sh
