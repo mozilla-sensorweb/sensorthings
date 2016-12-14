@@ -451,11 +451,11 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
         };
 
         beforeEach(done => {
-          Promise.all([
-            models[endpoint].destroy({ where: {} })
-          ].concat(associatedModels.map(name => {
-              return models[name].destroy({ where: {} });
-          }))).then(() => done());
+          models.sequelize.transaction(transaction => {
+            return Promise.all(Object.keys(CONST.entities).map(name => {
+              return models[name].destroy({ transaction, where: {} });
+            }));
+          }).then(() => done());
         });
 
         mandatory.forEach(property => {
