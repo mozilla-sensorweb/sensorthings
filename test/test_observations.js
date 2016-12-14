@@ -15,8 +15,7 @@ import * as ERR from '../src/errors';
 
 const mandatory     = [
   'phenomenonTime',
-  'result',
-  'resultTime'
+  'result'
 ];
 // XXX #16 resultQuality
 const optional      = ['validTime', 'parameters'];
