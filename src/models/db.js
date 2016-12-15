@@ -127,7 +127,8 @@ export default config => {
 
       const options = {
         exclude: queryOptions.attributes.exclude,
-        ref: req.params[3]
+        ref: req.params[3],
+        select: req.odata && req.odata.$select
       };
 
       if (property) {
@@ -201,11 +202,12 @@ export default config => {
     }
 
     const options = {
+      count: req.odata && req.odata.$count,
       exclude: queryOptions.attributes.exclude,
       ref: req.params[3],
-      top: queryOptions.limit,
+      select: req.odata && req.odata.$select,
       skip: queryOptions.offset,
-      count: req.odata && req.odata.$count
+      top: queryOptions.limit
     };
 
     return db[modelName].findAndCountAll(queryOptions).then(result => {
