@@ -12,7 +12,10 @@ import {
   datastreams,
   entities,
   featureOfInterest,
+  featuresOfInterest,
   iotId,
+  locations,
+  observedProperties,
   sensors,
   things
 } from '../constants';
@@ -34,8 +37,13 @@ const featureOfInterestFromLocation = location => {
     return null;
   }
 
-  const feature = Object.assign({}, location);
-  feature.feature = Object.assign({}, feature.location);
+  const feature = Object.assign({}, {
+    name: location.name,
+    description: location.description,
+    encodingType: location.encodingType
+  });
+
+  feature.feature = Object.assign({}, location.location);
   Reflect.deleteProperty(feature, 'location');
   return feature;
 }
@@ -282,8 +290,24 @@ const maybeCreate = (transaction, instance, req, exclude, thingLocation) => {
       // automatically create a FeatureOfInterest entity from the Location of
       // the Thing and then link to the Observation.
       if (associationName === featureOfInterest) {
-        body = body || featureOfInterestFromLocation(thingLocation) ||
-          featureOfInterestFromLocation(req.body.Datastream.Thing.Locations);
+        body = body || featureOfInterestFromLocation(thingLocation);
+        if (!body && req.body.Datastream) {
+          promises.push(getLocationFromDatastream(req.body.Datastream)
+          .then(loc => {
+            if (!loc) {
+              throw Object.create({
+                name: BAD_REQUEST,
+                errno: ERRNO_MANDATORY_ASSOCIATION_MISSING,
+                errors: 'Missing mandatory association: ' + associationName
+              });
+            }
+            return create(transaction, instance, models[featuresOfInterest],
+                          association, featureOfInterestFromLocation(loc),
+                          exclude);
+          }));
+
+          return;
+        }
       }
 
       // For each possible association we check if the request body contains
@@ -321,39 +345,101 @@ const maybeCreate = (transaction, instance, req, exclude, thingLocation) => {
       // request object, for following calls to maybeCreate while traversing
       // the Datastream body looking for Datastream associations.
       associatedEntities.forEach(associatedEntity => {
-        let _thingLocation;
-        if (pluralName === datastreams) {
-          try {
-            // XXX Handle case where entities are references (@iot.id)
-            let locations;
-            switch (modelName) {
-              case things:
-                locations = req.body.Locations;
-                break;
-              case sensors:
-                locations = associatedEntity.Thing.Locations;
-                break;
-              default:
-                break;
-            }
-            _thingLocation = Array.isArray(locations) ?
-                             locations[0] : locations;
-          } catch(e) {
-            _thingLocation = null;
-          }
-        }
+        const getLocationAndCreate =
+          getLocation(pluralName, modelName, req, associatedEntity)
+          .then(_thingLocation => {
+              const currentThingLocation = thingLocation || _thingLocation;
+              return create(transaction, instance, modelToAssociateWith,
+                            association, associatedEntity, exclude,
+                            currentThingLocation);
+          });
 
-        promises.push([
-          transaction, instance, modelToAssociateWith, association,
-          associatedEntity, exclude,  thingLocation || _thingLocation
-        ]);
+        promises.push(getLocationAndCreate);
       });
     });
 
-    return Promise.all(promises.map(args => {
-      return Reflect.apply(create, undefined, args);
-    })).then(() => instance);
+    return Promise.all(promises).then(() => instance);
   });
+}
+
+const getLocationFromDatastream = (datastreamEntity) => {
+  return db().then(models => {
+    if (datastreamEntity[iotId]) {
+      return findLocation(datastreams, datastreamEntity[iotId], {
+        model: models[things],
+        include: models[locations]
+      });
+    }
+
+    if (datastreamEntity.Thing) {
+      if (datastreamEntity.Thing[iotId]) {
+        return findLocation(things, datastreamEntity.Thing[iotId],
+                            models[locations]);
+      }
+
+      if (datastreamEntity.Thing.Locations) {
+        if (datastreamEntity.Thing.Locations[0][iotId]) {
+          const locationId = datastreamEntity.Thing.Locations[0][iotId];
+          return findLocation(locations, locationId);
+        }
+
+        return Promise.resolve(datastreamEntity.Thing.Locations[0]);
+      }
+    }
+
+    return Promise.resolve(null);
+  });
+}
+
+const findLocation = (modelName, id, include = []) => {
+  return db().then(models => {
+    return models[modelName].findOne({
+        where: { id: id },
+        include: include
+      }).then(instance => {
+        try {
+          let _currentLoc;
+          switch (modelName) {
+            case datastreams:
+              _currentLoc = instance.Thing.Locations[0];
+              break;
+            case things:
+              _currentLoc = instance.Locations[0];
+              break;
+            case locations:
+              _currentLoc = instance;
+              break;
+            default:
+              break;
+          }
+          return _currentLoc.dataValues;
+        } catch(e) {
+          return null;
+        }
+      });
+  });
+}
+
+const getLocation = (pluralName, modelName, req, associatedEntity) => {
+  let _thingLocation;
+  if (pluralName === datastreams) {
+    switch (modelName) {
+      case things:
+        _thingLocation = Promise.resolve(req.body.Locations ?
+            req.body.Locations[0] : null);
+        break;
+      case sensors:
+      case observedProperties:
+        _thingLocation = getLocationFromDatastream(associatedEntity);
+        break;
+      default:
+        _thingLocation = Promise.resolve(null);
+        break;
+    }
+    return _thingLocation;
+  }
+
+  return Promise.resolve(null);
 }
 
 export default {
