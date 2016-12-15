@@ -17,7 +17,10 @@ import db from './models/db';
 import { baseRouter }  from './routes/base';
 import { route }  from './utils'
 
-import { entities } from './constants';
+import { entities,
+         createObservations } from './constants';
+
+import dataArrayRouter from './extensions/data_array';
 
 const API_VERSION = 'v1.0';
 
@@ -46,6 +49,8 @@ module.exports = (config) => {
     router.use(route.generate(version, endpoint),
                require('./routes/' + snake(endpoint))(version));
   });
+  router.use('/' + version + '/' + createObservations,
+             dataArrayRouter(version));
 
   return router;
 };
