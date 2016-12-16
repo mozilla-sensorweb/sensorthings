@@ -234,7 +234,7 @@ db().then(models => {
                   'organization': 'Mozilla',
                   'owner': 'Mozilla'
                 },
-                'Locations': {
+                'Locations': [{
                   'description': 'My backyard',
                   'name': 'My backyard',
                   'encodingType': 'application/vnd.geo+json',
@@ -242,7 +242,7 @@ db().then(models => {
                     'type': 'Point',
                     'coordinates': [-117.123, 54.123]
                   }
-                }
+                }]
               }
             },
             'FeatureOfInterest': {
