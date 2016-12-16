@@ -738,11 +738,11 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
           instanceId = undefined;
           let model;
           model = models[endpoint];
-          Promise.all([
-            models[endpoint].destroy({ where: {} })
-          ].concat(associatedModels.map(name => {
-            return models[name].destroy({ where: {} });
-          }))).then(() => {
+          models.sequelize.transaction(transaction => {
+            return Promise.all(Object.keys(CONST.entities).map(name => {
+              return models[name].destroy({ transaction, where: {} });
+            }));
+          }).then(() => {
             const entity = Object.assign({}, testEntity);
             model.create(entity).then(instance => {
               instanceId = instance.id;
