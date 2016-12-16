@@ -3,12 +3,19 @@ jdk:
 - oraclejdk8
 env:
   matrix:
-   - TESTS=OGC_TESTS
-   - TESTS=API
+  - TESTS=OGC_TESTS
+  - TESTS=API
+  global:
+  - SSH_KEY="id_rsa"
+  - GIT_NAME="Isabel Rios"
+  - GIT_EMAIL="isabelrios@gmail.com"
+  - DEPLOY_BRANCH="master"
 matrix:
   allow_failures:
-     - env: TESTS=OGC_TESTS
+  - env: TESTS=OGC_TESTS
 before_install:
+- openssl aes-256-cbc -K $encrypted_adf0efbba173_key -iv $encrypted_adf0efbba173_iv
+  -in id_rsa.enc -out id_rsa -d
 - java -version
 - wget https://raw.githubusercontent.com/creationix/nvm/v0.31.0/nvm.sh -O ~/.nvm/nvm.sh
 - source ~/.nvm/nvm.sh
@@ -17,7 +24,7 @@ before_install:
 services:
 - postgresql
 addons:
-  postgresql: "9.4"
+  postgresql: '9.4'
 before_script:
 - if [[ "$TESTS" = "API" ]]; then npm run test; fi
 - if [[ "$TESTS" = "OGC_TESTS" ]]; then npm run example & fi
@@ -25,5 +32,8 @@ script:
 - if [[ "$TESTS" = "OGC_TESTS" ]]; then source ./scripts/OGC_tests/install_tests.sh ; fi
 - if [[ "$TESTS" = "OGC_TESTS" ]]; then source ./scripts/preconditions.sh ; fi
 - if [[ "$TESTS" = "OGC_TESTS" ]]; then source ./scripts/OGC_tests/launch_tests.sh ; fi
+after_script:
+- if [[ "$TESTS" = "OGC_TESTS" ]]; then npm run gh-pages-travis; fi
+- if [[ "$TESTS" = "OGC_TESTS" ]]; then source ./scripts/OGC_tests/check_tests_failures.sh ; fi
 after_success:
 - if [[ "$TESTS" = "API" ]]; then npm run coverage ; fi
