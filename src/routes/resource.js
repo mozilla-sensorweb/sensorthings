@@ -65,7 +65,7 @@ module.exports = function resource(endpoint, exclude, version) {
     });
   });
 
-  router.patch('', (req, res) => {
+  const updateResource = (req, res) => {
     const id = req.params && req.params[0];
     if (!id) {
       return ERR.ApiError(res, 404, ERR.ERRNO_RESOURCE_NOT_FOUND,
@@ -84,7 +84,10 @@ module.exports = function resource(endpoint, exclude, version) {
     }).catch(() => {
       ERR.ApiError(res, 500, ERR.ERRNO_INTERNAL_ERROR, ERR.INTERNAL_ERROR);
     });
-  });
+  };
+
+  router.patch('', updateResource);
+  router.put('', updateResource);
 
   router.delete('', (req, res) => {
     if (!req.params || !req.params[0]) {
