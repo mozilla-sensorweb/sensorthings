@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns:math="http://exslt.org/math" xmlns:testng="http://testng.org"
+     xmlns="http://www.w3.org/2000/svg"
+     xmlns:dc="http://purl.org/dc/terms/"
+     height="160"
+     preserveAspectRatio="xMidYMid meet"
+     viewBox="0 0 900 300"
+     width="500">
+   <defs>
+      <style type="text/css">
+            
+				            .axistitle { font-weight:bold; font-size:24px; font-family:Arial; text-anchor:middle; }
+				            .xgrid, .ygrid, .legendtext { font-weight:normal; font-size:24px; font-family:Arial; }
+				            .xgrid {text-anchor:middle;}
+				            .ygrid {text-anchor:end;}
+				            .gridline { stroke:black; stroke-width:1; }
+				            .values { fill:black; stroke:none; text-anchor:middle; font-size:12px; font-weight:bold; }
+	   		            
+          </style>
+   </defs>
+   <svg id="graphzone" preserveAspectRatio="xMidYMid meet" x="0" y="0">
+      <rect height="20" style="fill:red;stroke-width:1;stroke:black;" width="20" x="10"
+            y="86"/>
+      <text class="legendtext" x="40" y="105">Failed (13%)
+          </text>
+      <rect height="20" style="fill:green;stroke-width:1;stroke:black;" width="20" x="10"
+            y="125"/>
+      <text class="legendtext" x="40" y="143">Passed (52%)
+          </text>
+      <rect height="20" style="fill:yellow;stroke-width:1;stroke:black;" width="20" x="10"
+            y="163"/>
+      <text class="legendtext" x="40" y="182">Skipped (35%)
+          </text>
+      <g style="stroke:black;stroke-width:1" transform="translate(450,150)">
+         <g style="fill:red" transform="rotate(-125.21739130434783) translate(15, -6)">
+            <path d="M 0 0 h 130 A 130,130 0,0,0 88.731924817563,-95.0086602272148 z"/>
+         </g>
+         <g style="fill:green" transform="rotate(-172.17391304347828)">
+            <path d="M 0 0 h 130 A 130,130 0,1,0 -128.78918505734748,17.701576547423848 z"/>
+         </g>
+         <g style="fill:yellow" transform="rotate(360)">
+            <path d="M 0 0 h 130 A 130,130 0,0,0 -74.96839358608058,-106.20612017733495 z"/>
+         </g>
+      </g>
+   </svg>
+</svg>
