@@ -422,6 +422,14 @@ const findLocation = (modelName, id, include = []) => {
 
 const getLocation = (pluralName, modelName, req, associatedEntity) => {
   let _thingLocation;
+
+  // The entity we are creating is a Datastream, and so, the location can be in
+  // its body
+  if (modelName === datastreams) {
+    return getLocationFromDatastream(req.body);
+  }
+
+  // We are associating a Datastream to any other entity
   if (pluralName === datastreams) {
     switch (modelName) {
       case things:
