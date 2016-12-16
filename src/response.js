@@ -7,11 +7,13 @@
  */
 
 import {
+  excludedFields,
   hostHeader,
   iotCount,
   iotId,
   iotNextLink,
   iotSelfLink,
+  modelNames,
   navigationLink,
   protocolHeader
 } from './constants';
@@ -21,11 +23,15 @@ const FIELDS_TO_FILTER = [
 ];
 
 const formatItem = (item, associations, prepath, options) => {
-  const { exclude, ref, select } = options;
+  const { exclude, expand, ref, select } = options;
 
   const selected = field => {
     field = field.replace('@iot.', '');
     return !select || (select.indexOf(field) !== -1);
+  };
+
+  const expanded = field => {
+    return expand && expand.indexOf(field) !== -1;
   };
 
   // We need to get the data directly from item (and not item.dataValues) so
@@ -47,6 +53,24 @@ const formatItem = (item, associations, prepath, options) => {
   }
 
   associations && associations.forEach(association => {
+    if (expanded(association)) {
+      const toExclude = excludedFields[modelNames[association]];
+      if (Array.isArray(item[association])) {
+        formatedItem[association] = [];
+        item[association].forEach(toExpand => {
+          formatedItem[association].push(
+            formatItem(toExpand, null, prepath, { exclude: toExclude })
+          );
+        });
+      } else {
+        formatedItem[association] = formatItem(
+          item[association], null, prepath, {
+            exclude: toExclude
+          }
+        );
+      }
+      return;
+    }
     const link = association + navigationLink;
     if (selected(association)) {
       formatedItem[link] =
@@ -56,7 +80,7 @@ const formatItem = (item, associations, prepath, options) => {
 
   Object.keys(item.dataValues).forEach(key => {
     if (FIELDS_TO_FILTER.concat(exclude).indexOf(key) === -1 &&
-        selected(key)) {
+        selected(key) && !formatedItem[key]) {
       formatedItem[key] = item[key];
     }
   });
@@ -75,7 +99,7 @@ const generate = (resource, associations, req, version, options) => {
   const prepath = getPrepath(req, version);
 
   if (resource && Array.isArray(resource)) {
-    const { top, skip, count, totalCount } = options;
+    const { count, skip, top, totalCount } = options;
 
     let response = {};
 

@@ -43,6 +43,8 @@ export const things = 'Things';
 export const thingNavigationLink = thing + navigationLink;
 export const thingsNavigationLink = things + navigationLink;
 
+export const thingLocations = 'ThingLocations';
+
 export const entities = {
   'Datastreams': 'Datastream',
   'FeaturesOfInterest': 'FeatureOfInterest',
@@ -52,6 +54,25 @@ export const entities = {
   'ObservedProperties': 'ObservedProperty',
   'Sensors': 'Sensor',
   'Things': 'Thing'
+};
+
+export const modelNames = {
+  'Datastream': 'Datastreams',
+  'Datastreams': 'Datastreams',
+  'FeatureOfInterest': 'FeaturesOfInterest',
+  'FeaturesOfInterest': 'FeaturesOfInterest',
+  'HistoricalLocation': 'HistoricalLocations',
+  'HistoricalLocations': 'HistoricalLocations',
+  'Location': 'Locations',
+  'Locations': 'Locations',
+  'Observation': 'Observations',
+  'Observations': 'Observations',
+  'ObservedProperty': 'ObservedProperties',
+  'ObservedProperties': 'ObservedProperties',
+  'Sensor': 'Sensors',
+  'Sensors': 'Sensors',
+  'Thing': 'Things',
+  'Things': 'Things'
 };
 
 export const protocolHeader = 'x-forwarded-proto';
@@ -73,7 +94,7 @@ export const excludedFields = {
                                               observedPropertyId]),
   'FeaturesOfInterest': commonExcludedFields,
   'HistoricalLocations': commonExcludedFields.concat([thing, thingId]),
-  'Locations': commonExcludedFields,
+  'Locations': commonExcludedFields.concat([thingLocations]),
   'Observations': commonExcludedFields.concat([featureOfInterest,
                                                featureOfInterestId,
                                                datastream,
