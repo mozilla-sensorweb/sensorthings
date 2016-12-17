@@ -11,6 +11,7 @@ import {
   iotCount,
   iotId,
   iotNextLink,
+  iotSelfLink,
   navigationLink,
   protocolHeader
 } from './constants';
@@ -20,28 +21,42 @@ const FIELDS_TO_FILTER = [
 ];
 
 const formatItem = (item, associations, prepath, options) => {
-  const { exclude, ref } = options;
+  const { exclude, ref, select } = options;
+
+  const selected = field => {
+    field = field.replace('@iot.', '');
+    return !select || (select.indexOf(field) !== -1);
+  };
+
   // We need to get the data directly from item (and not item.dataValues) so
   // getters and setters of the models are called.
   const resourceName = item.$modelOptions.name.plural;
-  let formatedItem = {
-    '@iot.selfLink': prepath + resourceName + '(' + item.id + ')'
-  };
+
+  let formatedItem = {};
+  if (selected(iotSelfLink)) {
+    formatedItem[iotSelfLink] = prepath + resourceName + '(' + item.id + ')';
+  }
 
   if (ref) {
     // 9.2.7 Usage 7: address to an associationLink.
     return formatedItem;
   }
 
-  formatedItem[iotId] = item.id;
+  if (selected(iotId)) {
+    formatedItem[iotId] = item.id;
+  }
 
   associations && associations.forEach(association => {
-    formatedItem[association + navigationLink] =
-      prepath + resourceName + '(' + item.id + ')/' + association;
+    const link = association + navigationLink;
+    if (selected(association)) {
+      formatedItem[link] =
+        prepath + resourceName + '(' + item.id + ')/' + association;
+    }
   });
 
   Object.keys(item.dataValues).forEach(key => {
-    if (FIELDS_TO_FILTER.concat(exclude).indexOf(key) === -1) {
+    if (FIELDS_TO_FILTER.concat(exclude).indexOf(key) === -1 &&
+        selected(key)) {
       formatedItem[key] = item[key];
     }
   });

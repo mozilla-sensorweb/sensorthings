@@ -16,7 +16,6 @@ import * as ERR   from '../src/errors';
 
 db().then(models => {
   describe('Query language', () => {
-
     const port        = 8123;
     const server      = supertest.agent(app.listen(port));
     const limit       = CONST.limit;
@@ -210,7 +209,7 @@ db().then(models => {
               promises.push(model.create(entity));
             }
             Promise.all(promises).then(() => {
-              done()
+              done();
             });
           });
         });
@@ -241,6 +240,94 @@ db().then(models => {
             }
             done();
           });
+        });
+      });
+    });
+
+    describe('$select', () => {
+      let ids = [];
+      const entity = Object.assign({}, CONST[modelName + 'Entity']);
+      before(done => {
+        const model = models[modelName];
+        let promises = [];
+        model.destroy({ where: {} }).then(() => {
+          for (let i = 0; i < 2; i++) {
+            promises.push(model.create(entity));
+          }
+          Promise.all(promises).then(results => {
+            results.forEach(result => {
+              ids.push(result.id);
+            });
+            done();
+          });
+        });
+      });
+
+      it('should select the entire entity if no $select is present', done => {
+        const url = modelName + '(' + ids[0] + ')';
+        get(url).then(result => {
+          const selfLink = fullPrepath + modelName + '(' + ids[0] + ')';
+          const expected = Object.assign({}, entity, {
+            '@iot.selfLink': selfLink,
+            '@iot.id': ids[0],
+            'Locations@iot.navigationLink': selfLink + '/Locations',
+            'HistoricalLocations@iot.navigationLink': selfLink +
+                                                      '/HistoricalLocations',
+            'Datastreams@iot.navigationLink': selfLink + '/Datastreams',
+          });
+          result.should.be.deepEqual(expected);
+          done();
+        });
+      });
+
+      it('should select selfLink and id for Thing with id', done => {
+        const url = modelName + '(' + ids[0] +
+          ')?$select=selfLink,id';
+        get(url).then(result => {
+          result.should.be.deepEqual({
+            '@iot.selfLink': fullPrepath + modelName + '(' + ids[0] + ')',
+            '@iot.id': ids[0]
+          });
+          done();
+        });
+      });
+
+      it('should select Locations for Thing with id', done => {
+        const url = modelName + '(' + ids[0] + ')?$select=Locations';
+        get(url).then(result => {
+          result.should.be.deepEqual({
+            'Locations@iot.navigationLink': fullPrepath + modelName + '(' +
+                                            ids[0] + ')/Locations'
+          });
+          done();
+        });
+      });
+
+      it('should select description and name for Thing with id', done => {
+        const url = modelName + '(' + ids[0] + ')?$select=description,name';
+        get(url).then(result => {
+          result.should.be.deepEqual({
+            description: entity.description,
+            name: entity.name
+          });
+          done();
+        });
+      });
+
+      it('should select description and name for all Things', done => {
+        const url = modelName + '?$select=description,name';
+        get(url).then(result => {
+          result.should.be.deepEqual({
+            '@iot.count': 2,
+            value: [{
+              description: entity.description,
+              name: entity.name
+            }, {
+              description: entity.description,
+              name: entity.name
+            }]
+          });
+          done();
         });
       });
     });
