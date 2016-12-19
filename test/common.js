@@ -1015,7 +1015,8 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
       postSuccess,
       postError,
       patchSuccess,
-      patchError
+      patchError,
+      server
     });
   });
 }
