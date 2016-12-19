@@ -674,6 +674,17 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
             res.body.code.should.be.equal(code);
             res.body.errno.should.be.equal(ERRNOS[errno]);
             res.body.error.should.be.equal(ERRORS[error]);
+          });
+
+          server.put(resource()).send(body)
+          .expect('Content-Type', /json/)
+          .expect(code)
+          .end((err, res) => {
+            should.not.exist(err);
+            res.status.should.be.equal(code);
+            res.body.code.should.be.equal(code);
+            res.body.errno.should.be.equal(ERRNOS[errno]);
+            res.body.error.should.be.equal(ERRORS[error]);
             done();
           });
         };
