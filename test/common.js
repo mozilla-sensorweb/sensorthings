@@ -962,47 +962,49 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
         });
 
         describe('Integrity constraints', () => {
-          const linkedModel = CONST.integrityConstrains[endpoint];
-          if (!linkedModel) {
+          const linkedModels = CONST.integrityConstrains[endpoint] || [];
+          if (!linkedModels.length) {
             return;
           }
 
           beforeEach(done => {
-            Promise.all([
-              models[linkedModel].destroy({ where: {} }),
-              models[endpoint].destroy({ where: {} })
-            ]).then(() => {
-              done();
-            });
+            models.sequelize.transaction(transaction => {
+              return Promise.all(Object.keys(CONST.entities).map(name => {
+                return models[name].destroy({ transaction, where: {} });
+              }));
+            }).then(() => done());
           });
 
-          it('should delete all ' + linkedModel + ' entities linked to the ' +
+          it('should delete all ' + linkedModels + ' entities linked to the ' +
              endpoint + ' entity being deleted', done => {
-            let model;
-            model = models[linkedModel];
-            model.create(
-              Object.assign({}, CONST[linkedModel + 'Entity'])
-            ).then(instance => {
-              return new Promise(resolve => {
-                const body = Object.assign({}, body, testEntity);
+            Promise.all(linkedModels.map(linkedModel => {
+              return models[linkedModel].create(
+                Object.assign({}, CONST[linkedModel + 'Entity'])
+              )
+            })).then((instances) => {
+              const body = Object.assign({}, body, testEntity);
+              linkedModels.forEach((linkedModel, index) => {
                 body[associationsMap[linkedModel]] = {
-                  '@iot.id': instance.id
+                  '@iot.id': instances[index].id
                 };
+              });
+              return new Promise(resolve => {
                 server.post(prepath + endpoint).send(body)
                 .expect(201)
                 .end((err, res) => {
                   should.not.exist(err);
                   resolve(res.body[CONST.iotId]);
                 });
-              });
-            }).then(id => {
-              server.delete(prepath + endpoint + '(' + id + ')').send()
-              .expect(200)
-              .end((err) => {
-                should.not.exist(err);
-                model.findAndCountAll().then(result => {
-                  result.count.should.be.equal(0);
-                  done();
+              }).then(id => {
+                server.delete(prepath + endpoint + '(' + id + ')').send()
+                .expect(200)
+                .end((err) => {
+                  should.not.exist(err);
+                  Promise.all(linkedModels.concat(endpoint).map(modelName => {
+                    return models[modelName].findAndCountAll().then(result => {
+                      result.count.should.be.equal(0);
+                    });
+                  })).then(() => done());
                 });
               });
             });
