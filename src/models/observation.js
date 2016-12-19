@@ -78,18 +78,23 @@ module.exports = (sequelize, DataTypes) => {
     },
     result: { type: DataTypes.JSONB, allowNull: false },
     resultTime: {
+      // Note: Many resource-constrained sensing devices do not have a clock.
+      // As a result, a client may omit resultTime when POST new Observations,
+      // even though resultTime is a mandatory property. When a SensorThings
+      // service receives a POST Observations without resultTime, the service
+      // SHALL assign a null value to the resultTime
       type: DataTypes.DATE,
-      allowNull: false,
+      allowNull: true,
       get: function get() {
         const time = this.getDataValue('resultTime');
         if (!time) {
-          return;
+          return null;
         }
         return new Date(time).toISOString();
       },
       set: function set(value) {
         if (!value) {
-          return;
+          this.setDataValue('resultTime', null);
         }
         this.setDataValue('resultTime', new Date(value).toISOString());
       }
@@ -117,7 +122,11 @@ module.exports = (sequelize, DataTypes) => {
     classMethods: {
       associate: db => {
         Observation.belongsTo(db.Datastreams);
+        Observation.associations.Datastream.mandatory = true;
         Observation.belongsTo(db.FeaturesOfInterest);
+        // Issue #137: When creating an Observation without FeatureOfInterest,
+        // we should extract it from Locations
+        Observation.associations.FeatureOfInterest.mandatory = true;
       }
     }
   });

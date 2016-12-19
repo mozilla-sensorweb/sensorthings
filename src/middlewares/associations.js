@@ -11,6 +11,8 @@ import {
   hasOne
 } from '../constants';
 
+import { getModelName } from '../utils';
+
 export default version => {
   return (req, res, next) => {
     // Removes starting and trailing '/' and the version and splits the url
@@ -33,13 +35,15 @@ export default version => {
         const matched = resource && resource.match(/^(\w+)(?:\((\d+)\))?$/);
         let model;
         let id;
+        let associationName;
         if (matched) {
-          model = models[matched[1]];
+          model = models[getModelName(matched[1])];
           id = matched[2];
+          associationName = matched[1];
         } else {
           model = models[resource];
         }
-        return { model, id };
+        return { model, id, associationName };
       };
 
       const verifyAssociations = (resourcesLeft, resource,
@@ -51,22 +55,30 @@ export default version => {
         previousResource = resource;
         resource = parseResource(resourcesLeft.shift());
 
-        req.lastResource = previousResource;
-
         // It is possible that we are handling a url to a property of an
-        // entity (9.2.4)
+        // entity (9.2.4). Or an address to an associationLink (9.2.7).
         if (!resource.model) {
           return next();
         }
 
+        // We only set 'lastResource' if the resource is a model.
+        // i.e in ModelA(1)/ModelB/something or ModelA(1)/ModelB(1)/something
+        // lastResource won't be ModelB, but ModelA.
+        req.lastResource = previousResource;
+
         // Check that the association is possible between the two models.
         const previousModel = previousResource.model;
         const previousId = previousResource.id;
-        const { model, id } = resource;
-        const association = previousModel.associations[model.name];
+        const { model, id, associationName } = resource;
+        const association = previousModel.associations[associationName];
         if (!association) {
           return ERR.ApiError(res, 400, ERR.ERRNO_INVALID_ASSOCIATION,
                               ERR.BAD_REQUEST);
+        }
+
+        const type = association.associationType;
+        if ([hasMany, belongsToMany].indexOf(type) > -1) {
+          return verifyAssociations(resourcesLeft, resource, previousResource);
         }
 
         // Check that the association between the two entities actually exists.
@@ -76,18 +88,24 @@ export default version => {
                                 ERR.NOT_FOUND);
           }
 
-          // If there's no id, we don't need to check any specific association.
-          if (!id) {
-            return verifyAssociations(resourcesLeft, resource,
-                                      previousResource);
-          }
+          const name = model.options.name.singular;
 
-          switch (association.associationType) {
+          switch (type) {
             case hasMany:
             case belongsToMany:
-              return previousEntity['has' + model.options.name.singular](id)
-              .then(isAssociated => {
-                if (!isAssociated) {
+              // If there's no id, we don't need to check any specific
+              // association.
+              if (!id) {
+                return verifyAssociations(resourcesLeft, resource,
+                                          previousResource);
+              }
+
+              return previousEntity['has' + name](id).then(isAssociated => {
+                // Unless we are checking the last resource of a POST request
+                // (i.e. 'Thing' in POST v1.0/Datastreams(34)/Thing)
+                // if it's not associated, we throw a 404.
+                if (!isAssociated && req.method !== 'POST' &&
+                    !resourcesLeft.length) {
                   return ERR.ApiError(res, 404, ERR.ERRNO_RESOURCE_NOT_FOUND,
                                       ERR.NOT_FOUND);
                 }
@@ -95,8 +113,11 @@ export default version => {
               });
             case hasOne:
             case belongsTo:
-              return previousEntity['get' + model.name]().then(entity => {
-                if (!entity || entity.id !== id) {
+              return previousEntity['get' + name]().then(entity => {
+                // Unless we are checking the last resource of a POST request
+                // (i.e. 'Thing' in POST v1.0/Datastreams(34)/Thing)
+                // if it's not associated, we throw a 404.
+                if (!entity && req.method !== 'POST' && !resourcesLeft.length) {
                   return ERR.ApiError(res, 404, ERR.ERRNO_RESOURCE_NOT_FOUND,
                                       ERR.NOT_FOUND);
                 }
@@ -105,11 +126,12 @@ export default version => {
               });
             default:
               return ERR.ApiError(res, 500, ERR.ERRNO_INTERNAL_ERROR,
-                                  ERR.INTERNAL_ERROR);
+                                  ERR.INTERNAL_ERROR,
+                                  'Unknown association type');
           }
-        }).catch(() => {
+        }).catch(error => {
           return ERR.ApiError(res, 500, ERR.ERRNO_INTERNAL_ERROR,
-                              ERR.INTERNAL_ERROR);
+                              ERR.INTERNAL_ERROR, error);
         });
       };
 

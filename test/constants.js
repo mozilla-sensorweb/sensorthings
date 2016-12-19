@@ -48,7 +48,7 @@ const testConstants = Object.assign({}, Const, {
   }
 });
 
-module.exports = Object.assign({}, testConstants, {
+let testEntities = {
   DatastreamsEntity: {
     name: testConstants.name,
     description: testConstants.description,
@@ -102,17 +102,18 @@ module.exports = Object.assign({}, testConstants, {
       property2: 'it glows in the dark',
       property3: 'it repels insects'
     }
-  },
-  // Services MAY implicitly delete or modify related entities if required by
-  // integrity constraints.
-  // Table 25 of the spec listed SensorThings API’s integrity constraints
-  // when deleting an entity.
-  integrityConstraints: {
-    'Things': 'Datastreams',
-    'Locations': 'HistoricalLocations',
-    'Datastreams': 'Observations',
-    'Sensors': 'Datastreams',
-    'ObservedProperties': 'Datastreams',
-    'FeaturesOfInterests': 'Observations'
   }
-});
+};
+
+// Mandatory associations
+
+let datastream = testEntities.DatastreamsEntity;
+datastream.Sensor = testEntities.SensorsEntity;
+datastream.Thing = testEntities.ThingsEntity;
+datastream.ObservedProperty = testEntities.ObservedPropertiesEntity;
+
+let observation = testEntities.ObservationsEntity;
+observation.Datastream = testEntities.DatastreamsEntity;
+observation.FeatureOfInterest = testEntities.FeaturesOfInterestEntity;
+
+module.exports = Object.assign({}, testConstants, testEntities);

@@ -13,7 +13,7 @@ const config = {
     port: 5432,
     name: 'sensorthingsexample',
     user: 'postgres',
-    pass: '12345678'
+    password: '12345678'
   }
 };
 

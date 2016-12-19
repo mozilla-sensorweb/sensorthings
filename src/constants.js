@@ -4,11 +4,16 @@
 
 export const navigationLink = '@iot.navigationLink';
 
+export const datastream = 'Datastream';
 export const datastreams = 'Datastreams';
+export const datastreamNavigationLink = datastream + navigationLink;
 export const datastreamsNavigationLink = datastreams + navigationLink;
 
+export const featureOfInterest = 'FeatureOfInterest';
 export const featuresOfInterest = 'FeaturesOfInterest';
-export const featuresOfInterestNavitationLink =
+export const featureOfInterestNavigationLink =
+  featureOfInterest + navigationLink;
+export const featuresOfInterestNavigationLink =
   featuresOfInterest + navigationLink;
 
 export const historicalLocations = 'HistoricalLocations';
@@ -23,42 +28,76 @@ export const observationsNavigationLink = observations + navigationLink;
 
 export const observedProperty   = 'ObservedProperty';
 export const observedProperties = 'ObservedProperties';
+export const observedPropertyNavigationLink =
+  observedProperty + navigationLink;
 export const observedPropertiesNavigationLink =
   observedProperties + navigationLink;
 
+export const sensor = 'Sensor';
 export const sensors = 'Sensors';
+export const sensorNavigationLink = sensor + navigationLink;
 export const sensorsNavigationLink = sensors + navigationLink;
 
+export const thing = 'Thing';
 export const things = 'Things';
+export const thingNavigationLink = thing + navigationLink;
 export const thingsNavigationLink = things + navigationLink;
 
-export const entities = [
-  datastreams,
-  featuresOfInterest,
-  historicalLocations,
-  locations,
-  observations,
-  observedProperties,
-  sensors,
-  things
-];
+export const thingLocations = 'ThingLocations';
+
+export const entities = {
+  'Datastreams': 'Datastream',
+  'FeaturesOfInterest': 'FeatureOfInterest',
+  'HistoricalLocations': 'HistoricalLocation',
+  'Locations': 'Location',
+  'Observations': 'Observation',
+  'ObservedProperties': 'ObservedProperty',
+  'Sensors': 'Sensor',
+  'Things': 'Thing'
+};
+
+export const modelNames = {
+  'Datastream': 'Datastreams',
+  'Datastreams': 'Datastreams',
+  'FeatureOfInterest': 'FeaturesOfInterest',
+  'FeaturesOfInterest': 'FeaturesOfInterest',
+  'HistoricalLocation': 'HistoricalLocations',
+  'HistoricalLocations': 'HistoricalLocations',
+  'Location': 'Locations',
+  'Locations': 'Locations',
+  'Observation': 'Observations',
+  'Observations': 'Observations',
+  'ObservedProperty': 'ObservedProperties',
+  'ObservedProperties': 'ObservedProperties',
+  'Sensor': 'Sensors',
+  'Sensors': 'Sensors',
+  'Thing': 'Things',
+  'Things': 'Things'
+};
+
+export const protocolHeader = 'x-forwarded-proto';
+export const hostHeader = 'x-forwarded-server';
 
 export const datastreamId = 'DatastreamId';
 export const thingId = 'ThingId';
 export const sensorId = 'SensorId';
 export const observedPropertyId = 'ObservedPropertyId';
-export const featuresOfInterestId = 'FeaturesOfInterestId';
+export const featureOfInterestId = 'FeatureOfInterestId';
 
 export const createdAt = 'createdAt';
 export const updatedAt = 'updatedAt';
 export const commonExcludedFields = [createdAt, updatedAt];
 export const excludedFields = {
-  'Datastreams': commonExcludedFields.concat([thingId, sensorId,
+  'Datastreams': commonExcludedFields.concat([thing, thingId,
+                                              sensor, sensorId,
+                                              observedProperty,
                                               observedPropertyId]),
   'FeaturesOfInterest': commonExcludedFields,
-  'HistoricalLocations': commonExcludedFields.concat([thingId]),
-  'Locations': commonExcludedFields,
-  'Observations': commonExcludedFields.concat([featuresOfInterestId,
+  'HistoricalLocations': commonExcludedFields.concat([thing, thingId]),
+  'Locations': commonExcludedFields.concat([thingLocations]),
+  'Observations': commonExcludedFields.concat([featureOfInterest,
+                                               featureOfInterestId,
+                                               datastream,
                                                datastreamId]),
   'ObservedProperties': commonExcludedFields,
   'Sensors': commonExcludedFields,
@@ -87,9 +126,26 @@ export const observationTypes = {
 
 export const iotCount = '@iot.count';
 export const iotId = '@iot.id';
+export const iotNextLink = '@iot.nextLink';
 export const iotSelfLink = '@iot.selfLink';
 
 export const hasMany = 'HasMany';
 export const hasOne = 'HasOne';
 export const belongsTo = 'BelongsTo';
 export const belongsToMany = 'BelongsToMany';
+
+// Services MAY implicitly delete or modify related entities if required by
+// integrity constraints.
+// Table 25 of the spec listed SensorThings API’s integrity constraints
+// when deleting an entity.
+export const integrityConstrains = {
+  'Things': ['Datastreams', 'HistoricalLocations'],
+  'Locations': ['HistoricalLocations'],
+  'Datastreams': ['Observations'],
+  'Sensors': ['Datastreams'],
+  'ObservedProperties': ['Datastreams'],
+  'FeaturesOfInterest': ['Observations']
+};
+
+// DB query constants.
+export const limit = 100;

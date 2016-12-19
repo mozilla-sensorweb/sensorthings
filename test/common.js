@@ -2,6 +2,7 @@ import app           from './server';
 import db            from '../src/models/db';
 import should        from 'should';
 import supertest     from 'supertest';
+import { getModelName } from '../src/utils';
 
 import * as CONST from './constants';
 import * as ERR from '../src/errors';
@@ -39,13 +40,6 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
     return multiples.indexOf(type) > -1;
   }
 
-  const getPlural = function getPlural(entity) {
-    let name = entity.$modelOptions.name.plural;
-    if (name === 'FeaturesOfInterests') {
-      return entity.$modelOptions.name.singular;
-    }
-    return name;
-  }
 
   return db().then(models => {
     const associations = models[endpoint].associations;
@@ -56,6 +50,70 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
       const modelName = models[associationName] ? associationName : pluralName;
       associationsMap[modelName] = associationName;
     });
+
+    const removeAssociations = (body) => {
+      associatedModels.forEach(model => {
+        Reflect.deleteProperty(body, associationsMap[model]);
+      });
+      return body;
+    };
+
+    const getCountObject = (url, body, empty, overrides) => {
+      let countObject = {};
+      countObject[endpoint] = { count: 1 };
+
+      const alreadyExists = entity => {
+        if (!entity) {
+          return false;
+        }
+        return Object.keys(entity).length === 1 && entity[CONST.iotId];
+      }
+
+      Object.keys(models[endpoint].associations).forEach(association => {
+        const modelName = getModelName(association);
+        // We always create one manually on the test
+        countObject[modelName] = { count: empty ? 0 : 1 };
+        if (body[association]) {
+          if (Array.isArray(body[association])) {
+            body[association].forEach(a => {
+              if (alreadyExists(body[association][a])) {
+                return;
+              }
+              countObject[modelName].count++;
+            });
+            return;
+          }
+
+          if (alreadyExists(body[association])) {
+            return;
+          }
+
+          countObject[modelName].count++;
+        }
+      });
+
+      if (overrides) {
+        Object.keys(overrides).forEach(name => {
+          countObject[name].count = overrides[name](countObject[name].count);
+        });
+      }
+
+      // HistoricalLocations are automagically created when a Location that is
+      // linked to a Thing is created or viceversa.
+      const { things, locations, historicalLocations } = CONST;
+      if (countObject[historicalLocations] && !body[historicalLocations] &&
+          url.indexOf(historicalLocations) === -1) {
+        if (endpoint === locations) {
+          if (countObject[things].count) {
+            countObject[historicalLocations].count = countObject[things].count;
+          }
+        } else {
+          countObject[historicalLocations].count = countObject[locations].count;
+        }
+      }
+
+      return countObject;
+    }
 
     const associatedModels = Object.keys(associationsMap);
     let patchError, patchSuccess, postError, postSuccess;
@@ -96,8 +154,10 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
             const property = mandatory[0];
             const relations = {};
             associatedModels.forEach(modelName => {
-              relations[modelName] = relations[modelName] || [];
-              relations[modelName].push(CONST[modelName + 'Entity']);
+              const associationName = associationsMap[modelName];
+              const assocEntity = CONST[modelName + 'Entity'];
+              relations[associationName] = relations[associationName] || [];
+              relations[associationName].push(assocEntity);
             });
 
             const instance = Object.assign({}, testEntity, relations);
@@ -205,6 +265,32 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
             Promise.all(promises).then(() => done());
         });
 
+        it('should respond 200 to valid associationLink url', done => {
+          let promises = [];
+          associatedModels.forEach(modelName => {
+            const path = endpoint + '(' + instanceId + ')/' +
+                         associationsMap[modelName] + '/$ref';
+            promises.push(new Promise(resolve => {
+              server.get(prepath + path)
+              .expect('Content-Type', /json/)
+              .expect(200)
+              .end((err, res) => {
+                should.not.exist(err);
+                let value = res.body;
+                if (res.body[CONST.iotCount]) {
+                  res.body[CONST.iotCount].should.be.equal(1);
+                  value = res.body.value[0];
+                }
+                value[CONST.iotSelfLink].indexOf(
+                  fullPrepath + modelName
+                ).should.not.be.equal(-1);
+                resolve();
+              });
+            }));
+          });
+          Promise.all(promises).then(() => done());
+        });
+
         it('should respond 404 if invalid id is provided', done => {
           server.get(prepath + endpoint + '(0)')
           .expect('Content-Type', /json/)
@@ -220,65 +306,87 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
           });
         });
 
-        describe('Get specific properties', () => {
-          it('should respond 404 getting an invalid property', done => {
-            const path = prepath + endpoint + '(' + instanceId + ')';
-            server.get(path + '/randomProperty')
-            .expect('Content-Type', /json/)
-            .expect(404)
-            .end((err, res) => {
-              should.not.exist(err);
-              res.status.should.be.equal(404);
-              res.body.code.should.be.equal(404);
-              const NOT_FOUND_ERRNO = ERRNOS[ERR.ERRNO_RESOURCE_NOT_FOUND];
-              res.body.errno.should.be.equal(NOT_FOUND_ERRNO);
-              res.body.error.should.be.equal(ERRORS[ERR.NOT_FOUND]);
-              done();
-            });
-          });
-
-          mandatory.concat(optional).forEach(property => {
-            it('should return only 1 field when getting ' + property, done => {
-              const path = prepath + endpoint + '(' + instanceId + ')';
-              server.get(path + '/' + property)
-              .expect(200)
+        [false,
+         true].forEach(withValue => {
+          describe('Get specific properties' +
+                   (withValue ? ' with value' : ''), () => {
+            it('should respond 404 getting an invalid property', done => {
+              let path = prepath + endpoint + '(' + instanceId +
+                           ')/randomProperty';
+              if (withValue) {
+                path += '/$value';
+              }
+              server.get(path)
+              .expect('Content-Type', /json/)
+              .expect(404)
               .end((err, res) => {
                 should.not.exist(err);
-                res.status.should.be.equal(200);
-                Object.keys(res.body).length.should.be.equal(1);
-                res.body[property].should.be.deepEqual(testEntity[property]);
+                res.status.should.be.equal(404);
+                res.body.code.should.be.equal(404);
+                const NOT_FOUND_ERRNO = ERRNOS[ERR.ERRNO_RESOURCE_NOT_FOUND];
+                res.body.errno.should.be.equal(NOT_FOUND_ERRNO);
+                res.body.error.should.be.equal(ERRORS[ERR.NOT_FOUND]);
                 done();
               });
             });
-          });
 
-          optional.forEach(property => {
-            it('should return 204 when getting a empty ' + property, done => {
-              const path = prepath + endpoint + '(' + instanceId + ')';
-              let updateProperty = {};
-              updateProperty[property] = null;
-              models[endpoint].update(updateProperty, {
-                where: { id: instanceId }
-              }).then(() => {
-                server.get(path + '/' + property)
-                .expect(204)
+            mandatory.concat(optional).forEach(property => {
+              it('should return only 1 field when getting ' + property,
+                 done => {
+                let path = prepath + endpoint + '(' + instanceId + ')/' +
+                             property;
+                if (withValue) {
+                  path += '/$value';
+                }
+                server.get(path)
+                .expect(200)
+                .expect('Content-Type', /json/)
                 .end((err, res) => {
                   should.not.exist(err);
-                  res.status.should.be.equal(204);
-                  res.body.should.be.empty();
+                  res.status.should.be.equal(200);
+                  if (withValue) {
+                    res.body.should.be.deepEqual(testEntity[property]);
+                  } else {
+                    res.body[property].should.be.deepEqual(
+                      testEntity[property]);
+                  }
                   done();
                 });
-              })
+              });
             });
-          });
-        })
+
+            optional.forEach(property => {
+              it('should return 204 when getting a empty ' + property, done => {
+                let path = prepath + endpoint + '(' + instanceId + ')/' +
+                           property;
+                let updateProperty = {};
+                updateProperty[property] = null;
+                models[endpoint].update(updateProperty, {
+                  where: { id: instanceId }
+                }).then(() => {
+                  if (withValue) {
+                    path += '/$value';
+                  }
+                  server.get(path)
+                  .expect(204)
+                  .end((err, res) => {
+                    should.not.exist(err);
+                    res.status.should.be.equal(204);
+                    res.body.should.be.empty();
+                    done();
+                  });
+                })
+              });
+            });
+          })
+        });
       });
 
       describe('POST /' + endpoint, () => {
         const resource = prepath + endpoint;
 
-        postError = (done, body, code, errno, error) => {
-          server.post(resource).send(body)
+        postError = (done, body, code, errno, error, id) => {
+          server.post(id ? resource + '(' + id + ')' : resource).send(body)
           .expect('Content-Type', /json/)
           .expect(code)
           .end((err, res) => {
@@ -291,8 +399,8 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
           });
         };
 
-        postSuccess = (done, body, expected) => {
-          server.post(resource).send(body)
+        postSuccess = (done, body, expected, resourceOverride) => {
+          server.post(resourceOverride || resource).send(body)
           .expect('Content-Type', /json/)
           .expect(201)
           .end((err, res) => {
@@ -315,22 +423,27 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
             res.header.location.should.be.equal(fullPrepath + path);
             const expectedModels = Object.keys(expected);
             Promise.all(expectedModels.map(name => {
-              return models[name].findAndCountAll().then((result) => {
+              return models[name].findAndCountAll().then(result => {
                 const resultObject = {};
                 resultObject[name] = result;
                 return Promise.resolve(resultObject);
               });
             })).then(results => {
-              const primary = results[0][endpoint];
-              const instance = primary.rows[0];
-              instance.id.should.be.equal(res.body[CONST.iotId]);
-              mandatory.forEach(property => {
-                instance[property].should.be.deepEqual(testEntity[property]);
-              });
-              Object.keys(results[0]).forEach((result) => {
+              results.forEach(result => {
+                if (result[endpoint]) {
+                  const instance = result[endpoint].rows[0];
+                  instance.id.should.be.equal(res.body[CONST.iotId]);
+                  mandatory.forEach(property => {
+                    const expectedProperty = testEntity[property];
+                    instance[property].should.be.deepEqual(expectedProperty);
+                  });
+                  return;
+                }
                 // XXX associations.rows
-                const count = expected[result] ? expected[result].count : 0;
-                results[0][result].count.should.be.equal(count);
+                const modelName = Object.keys(result)[0];
+                const currentExpected = expected[modelName];
+                const count = currentExpected ? currentExpected.count : 0;
+                result[modelName].count.should.be.equal(count);
               });
               done();
             });
@@ -338,11 +451,11 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
         };
 
         beforeEach(done => {
-          Promise.all([
-            models[endpoint].destroy({ where: {} })
-          ].concat(associatedModels.map(name => {
-              return models[name].destroy({ where: {} });
-          }))).then(() => done());
+          models.sequelize.transaction(transaction => {
+            return Promise.all(Object.keys(CONST.entities).map(name => {
+              return models[name].destroy({ transaction, where: {} });
+            }));
+          }).then(() => done());
         });
 
         mandatory.forEach(property => {
@@ -355,17 +468,30 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
           });
         });
 
-        it('should respond 201 if the ' + endpoint + ' is valid', done => {
-          let countObject = {};
-          countObject[endpoint] = { count: 1 };
-          associatedModels.forEach((association) => {
-            countObject[association] = { count: 0 };
-          });
+        it('should respond 400 if POST request contains id', done => {
           const body = Object.assign({}, testEntity);
+          postError(done, body, 400, ERR.ERRNO_BAD_REQUEST, ERR.BAD_REQUEST,
+                    '1');
+        });
+
+        it('should respond 201 if the ' + endpoint + ' is valid', done => {
+          let body = Object.assign({}, testEntity);
+          const countObject = getCountObject(resource, body, true);
           postSuccess(done, body, countObject);
         });
 
         describe('Relations linking', () => {
+
+          beforeEach(done => {
+            // First of all we create an entity NOT associated to the tested
+            // model, so we can check that the responses don't include it (by
+            // checking the expected entity count on the responses);
+            Promise.all(associatedModels.map(name => {
+              const assocEntity = Object.assign({}, CONST[name + 'Entity']);
+              return models[name].create(assocEntity);
+            })).then(() => done());
+          });
+
           associatedModels.forEach(name => {
             it('should respond 400 if request tries to create a ' +
                 endpoint + ' linked to an unexisting ' + name, done => {
@@ -377,6 +503,17 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
                         ERR.BAD_REQUEST);
             });
 
+            if (associations[associationsMap[name]].mandatory) {
+              it('should respond 400 if request tries to create a ' +
+                  endpoint + ' missing mandatory ' + name, done => {
+                let body = Object.assign({}, testEntity);
+                Reflect.deleteProperty(body, associationsMap[name]);
+                postError(done, body, 400,
+                          ERR.ERRNO_MANDATORY_ASSOCIATION_MISSING,
+                          ERR.BAD_REQUEST);
+              });
+            }
+
             it('should respond 201 if request to link ' + endpoint +
                ' to existing ' + name + ' is valid', done => {
               models[name].create(CONST[name + 'Entity']).then(relation => {
@@ -384,20 +521,48 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
                 body[associationsMap[name]] = {
                   '@iot.id': relation.id
                 };
-                let countObject = {};
-                countObject[endpoint] = { count: 1 };
-                countObject[name] = { count: 1 };
+                const overrides = {};
+                overrides[name] = () => {
+                  return 2;
+                }
+                const countObject = getCountObject(resource, body, false,
+                                                   overrides);
                 postSuccess(done, body, countObject);
+              });
+            });
+
+            it('should respond 201 if request to link ' + endpoint +
+               ' to existing ' + name + ' by URL is valid', done => {
+              models[name].create(CONST[name + 'Entity'])
+              .then(instance => {
+                let endpointAssociation = models[name].associations[endpoint] ?
+                  endpoint :
+                  CONST.entities[endpoint];
+                const resourceOverride = prepath + name +
+                                         '(' + instance.id + ')/' +
+                                         endpointAssociation;
+                let body = Object.assign({}, testEntity);
+                Reflect.deleteProperty(body, associationsMap[name]);
+                const overrides = {};
+                overrides[name] = count => {
+                  count += 1;
+                  return count;
+                }
+                const countObject = getCountObject(resourceOverride, body,
+                                                   false, overrides);
+                postSuccess(done, body, countObject, resourceOverride);
               });
             });
 
             it('should respond 201 if request to create ' + endpoint +
                ' with related ' + name + ' is valid', done => {
               let body = Object.assign({}, testEntity);
-              body[associationsMap[name]] = CONST[name + 'Entity'];
-              let countObject = {};
-              countObject[endpoint] = { count: 1 };
-              countObject[name] = { count: 1 };
+              let assocEntity = Object.assign({}, CONST[name + 'Entity']);
+              Reflect.deleteProperty(assocEntity, endpoint);
+              Reflect.deleteProperty(assocEntity, CONST.entities[endpoint]);
+              body[associationsMap[name]] = assocEntity;
+
+              const countObject = getCountObject(resource, body);
               postSuccess(done, body, countObject);
             });
 
@@ -418,9 +583,13 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
                 created.forEach(row => {
                   body[associationsMap[name]].push({ '@iot.id': row.id });
                 });
-                let countObject = {};
-                countObject[endpoint] = { count: 1 };
-                countObject[name] = { count: created.length };
+
+                const overrides = {};
+                overrides[name] = () => {
+                  return 3;
+                }
+                const countObject = getCountObject(resource, body, false,
+                                                   overrides);
                 postSuccess(done, body, countObject);
               });
             });
@@ -434,12 +603,14 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
               }
 
               let body = Object.assign({}, testEntity);
+              let assocEntity = Object.assign({}, CONST[name + 'Entity']);
+              Reflect.deleteProperty(assocEntity, endpoint);
+              Reflect.deleteProperty(assocEntity, CONST.entities[endpoint]);
               body[associationsMap[name]] = [];
-              body[associationsMap[name]].push(CONST[name + 'Entity']);
-              body[associationsMap[name]].push(CONST[name + 'Entity']);
-              let countObject = {};
-              countObject[endpoint] = { count: 1 };
-              countObject[name] = { count: body[associationsMap[name]].length };
+              body[associationsMap[name]].push(assocEntity);
+              body[associationsMap[name]].push(assocEntity);
+              const countObject = getCountObject(resource, body);
+
               postSuccess(done, body, countObject);
             });
 
@@ -495,6 +666,17 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
 
         patchError = (done, body, code, errno, error) => {
           server.patch(resource()).send(body)
+          .expect('Content-Type', /json/)
+          .expect(code)
+          .end((err, res) => {
+            should.not.exist(err);
+            res.status.should.be.equal(code);
+            res.body.code.should.be.equal(code);
+            res.body.errno.should.be.equal(ERRNOS[errno]);
+            res.body.error.should.be.equal(ERRORS[error]);
+          });
+
+          server.put(resource()).send(body)
           .expect('Content-Type', /json/)
           .expect(code)
           .end((err, res) => {
@@ -567,11 +749,11 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
           instanceId = undefined;
           let model;
           model = models[endpoint];
-          Promise.all([
-            models[endpoint].destroy({ where: {} })
-          ].concat(associatedModels.map(name => {
-            return models[name].destroy({ where: {} });
-          }))).then(() => {
+          models.sequelize.transaction(transaction => {
+            return Promise.all(Object.keys(CONST.entities).map(name => {
+              return models[name].destroy({ transaction, where: {} });
+            }));
+          }).then(() => {
             const entity = Object.assign({}, testEntity);
             model.create(entity).then(instance => {
               instanceId = instance.id;
@@ -591,6 +773,7 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
         it('should respond 200 if request to update a ' +
            'single property of a ' + endpoint + ' is valid', done => {
           const entity = Object.assign({}, testEntity);
+          removeAssociations(entity);
           patchSuccess(done, entity);
         });
 
@@ -600,12 +783,14 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
           mandatory.forEach(field => {
             body[field] = anotherValue(field);
           });
+          removeAssociations(body);
           patchSuccess(done, body, Object.assign({}, testEntity, body));
         });
 
         it('should respond 200 if request to update a ' + endpoint +
            ' tries to update the id', done => {
           const body = Object.assign({}, testEntity, { 'id': 'something' });
+          removeAssociations(body);
           patchSuccess(done, body);
         });
 
@@ -620,7 +805,8 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
             });
             Promise.all(promises).then(results => {
               results.forEach(result => {
-                testEntities[getPlural(result)] = result.id
+                testEntities[models.getPlural(result.$modelOptions)] =
+                  result.id;
               });
               done()
             });
@@ -630,6 +816,7 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
             it('should respond 400 if request tries to update a ' + endpoint +
                ' to link it to an unexisting ' + name, done => {
               let body = Object.assign({}, testEntity);
+              removeAssociations(body);
               body[associationsMap[name]] = {
                 '@iot.id': '0'
               };
@@ -640,7 +827,9 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
             it('should respond 400 if request includes related ' +
                'entities as inline content', done => {
               let body = Object.assign({}, testEntity);
-              body[associationsMap[name]] = CONST[name + 'Entity'];
+              removeAssociations(body);
+              const assocEntity = Object.assign({}, CONST[name + 'Entity']);
+              body[associationsMap[name]] = assocEntity;
               patchError(done, body, 400, ERR.ERRNO_INLINE_CONTENT_NOT_ALLOWED,
                          ERR.BAD_REQUEST);
             });
@@ -649,6 +838,7 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
                ' to link it to an existing ' + name + ' is correct', done => {
               const association = associations[associationsMap[name]];
               let body = Object.assign({}, testEntity);
+              removeAssociations(body);
               body[associationsMap[name]] = {
                 '@iot.id': testEntities[name]
               };
@@ -668,6 +858,7 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
                 return done();
               }
               let body = Object.assign({}, testEntity);
+              removeAssociations(body);
               const anotherEntity = Object.assign({}, CONST[name + 'Entity']);
               models[name].create(anotherEntity).then(result => {
                 body[associationsMap[name]] = [{
@@ -695,6 +886,7 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
                 return done();
               }
               let body = Object.assign({}, testEntity);
+              removeAssociations(body);
               body[associationsMap[name]] = [{
                 '@iot.id': testEntities[name]
               }, {
@@ -703,8 +895,8 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
               patchError(done, body, 400, ERR.ERRNO_INVALID_ASSOCIATION,
                          ERR.BAD_REQUEST);
             });
-          })
-        })
+          });
+        });
       });
 
       describe('DELETE /' + endpoint + '(:id)', () => {
@@ -730,10 +922,10 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
 
         const deleteSuccess = (done) => {
           server.delete(resource())
-          .expect(204)
+          .expect(200)
           .end((err, res) => {
             should.not.exist(err);
-            res.status.should.be.equal(204);
+            res.status.should.be.equal(200);
             Promise.all([
               models[endpoint].findAndCountAll()
             ]).then(results => {
@@ -764,54 +956,55 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
           deleteError(done);
         });
 
-        it('should respond 204 if request to delete a ' + endpoint + ' is ' +
+        it('should respond 200 if request to delete a ' + endpoint + ' is ' +
            ' valid', done => {
           deleteSuccess(done);
         });
 
         describe('Integrity constraints', () => {
-          const linkedModel = CONST.integrityConstraints[endpoint];
-          if (!linkedModel) {
+          const linkedModels = CONST.integrityConstrains[endpoint] || [];
+          if (!linkedModels.length) {
             return;
           }
 
           beforeEach(done => {
-            Promise.all([
-              models[linkedModel].destroy({ where: {} }),
-              models[endpoint].destroy({ where: {} })
-            ]).then(() => {
-              done();
-            });
+            models.sequelize.transaction(transaction => {
+              return Promise.all(Object.keys(CONST.entities).map(name => {
+                return models[name].destroy({ transaction, where: {} });
+              }));
+            }).then(() => done());
           });
 
-          // XXX Issue 70 Enforce integrity constraints when deleting an entity
-          xit('should delete all ' + linkedModel + ' entities linked to the ' +
+          it('should delete all ' + linkedModels + ' entities linked to the ' +
              endpoint + ' entity being deleted', done => {
-            let model;
-            model = models[linkedModel];
-            model.create(
-              Object.assign({}, CONST[linkedModel + 'Entity'])
-            ).then(instance => {
-              return new Promise(resolve => {
-                const body = Object.assign({}, body, testEntity);
+            Promise.all(linkedModels.map(linkedModel => {
+              return models[linkedModel].create(
+                Object.assign({}, CONST[linkedModel + 'Entity'])
+              )
+            })).then((instances) => {
+              const body = Object.assign({}, body, testEntity);
+              linkedModels.forEach((linkedModel, index) => {
                 body[associationsMap[linkedModel]] = {
-                  '@iot.id': instance.id
+                  '@iot.id': instances[index].id
                 };
+              });
+              return new Promise(resolve => {
                 server.post(prepath + endpoint).send(body)
                 .expect(201)
                 .end((err, res) => {
                   should.not.exist(err);
                   resolve(res.body[CONST.iotId]);
                 });
-              });
-            }).then(id => {
-              server.delete(prepath + endpoint + '(' + id + ')').send()
-              .expect(204)
-              .end((err) => {
-                should.not.exist(err);
-                model.findAndCountAll().then(result => {
-                  result.count.should.be.equal(0);
-                  done();
+              }).then(id => {
+                server.delete(prepath + endpoint + '(' + id + ')').send()
+                .expect(200)
+                .end((err) => {
+                  should.not.exist(err);
+                  Promise.all(linkedModels.concat(endpoint).map(modelName => {
+                    return models[modelName].findAndCountAll().then(result => {
+                      result.count.should.be.equal(0);
+                    });
+                  })).then(() => done());
                 });
               });
             });
@@ -824,7 +1017,8 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
       postSuccess,
       postError,
       patchSuccess,
-      patchError
+      patchError,
+      server
     });
   });
 }

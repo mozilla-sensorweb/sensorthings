@@ -1,6 +1,6 @@
-import db         from '../models/db';
-import express    from 'express';
-import response   from '../response';
+import db           from '../models/db';
+import express      from 'express';
+import response     from '../response';
 
 import * as ERR   from '../errors';
 
@@ -20,6 +20,10 @@ module.exports = function resource(endpoint, exclude, version) {
           ERR.ApiError(res, 404, ERR.ERRNO_RESOURCE_NOT_FOUND, ERR.NOT_FOUND,
                        JSON.stringify(err.errors));
           break;
+        case ERR.NOT_IMPLEMENTED:
+          ERR.ApiError(res, 501, ERR.ERRNO_NOT_IMPLEMENTED,
+                       ERR.NOT_IMPLEMENTED, JSON.stringify(err.errors));
+          break;
         default:
           ERR.ApiError(res, 400, err.errno || ERR.ERRNO_BAD_REQUEST,
                        ERR.BAD_REQUEST, JSON.stringify(err.errors));
@@ -30,74 +34,42 @@ module.exports = function resource(endpoint, exclude, version) {
   let router = express.Router({ mergeParams: true });
 
   router.get('', (req, res) => {
-    const prepath = req.protocol + '://' + req.hostname + ':' +
-                    req.socket.localPort + '/' + version + '/';
     db().then(models => {
-      if (req.params && req.params[0]) {
-        const property = req.params[1];
-        let attributes = { exclude };
-        if (property) {
-          attributes.include = [ property ];
+      models.getInstance(endpoint, req, exclude).then(result => {
+        if (result.body) {
+          return res.status(result.code).json(result.body);
         }
-
-        models[endpoint].findById(req.params[0], {
-          attributes
-        }).then(instance => {
-          if (!instance) {
-            return ERR.ApiError(res, 404, ERR.ERRNO_RESOURCE_NOT_FOUND,
-                                ERR.NOT_FOUND);
-          }
-
-          if (property) {
-            // If the value of the property is null, it should respond 204
-            if (!instance[property]) {
-              return res.status(204).send();
-            }
-
-            let body = {};
-            body[property] = instance[property];
-            return res.status(200).send(body);
-          }
-
-          const associationModels = associations(models);
-          res.status(200).send(response.generate(instance, associationModels,
-                                                 prepath, exclude));
-        }).catch(() => {
-          return ERR.ApiError(res, 404, ERR.ERRNO_RESOURCE_NOT_FOUND,
-                                ERR.NOT_FOUND);
-        });
-      } else {
-        models[endpoint].findAll({
-          attributes: { exclude }
-        }).then(instances => {
-          const associationModels = associations(models);
-          res.status(200).send(response.generate(instances, associationModels,
-                                                 prepath, exclude));
-        });
-      }
-    }).catch(() => {
-      ERR.ApiError(res, 500, ERR.ERRNO_INTERNAL_ERROR, ERR.INTERNAL_ERROR);
-    });
-  });
-
-  router.post('/', (req, res) => {
-    const prepath = req.protocol + '://' + req.hostname + ':' +
-                    req.socket.localPort + '/' + version + '/';
-    db().then(models => {
-      models.createInstance(endpoint, req.body, exclude).then(instance => {
-        // XXX #13 Response urls should be absolute
-        res.location(prepath + endpoint + '(' + instance.id + ')');
-        res.status(201).send(response.generate(instance, associations(models),
-                                               prepath, exclude));
+        const instance = result.instance ?
+                         response.generate(result.instance,
+                                           associations(models),
+                                           req, version, result.options) :
+                         undefined;
+        res.status(result.code).send(instance);
       }).catch(handleModelError(res));
     }).catch(() => {
       ERR.ApiError(res, 500, ERR.ERRNO_INTERNAL_ERROR, ERR.INTERNAL_ERROR);
     });
   });
 
-  router.patch('', (req, res) => {
-    const prepath = req.protocol + '://' + req.hostname + ':' +
-                    req.socket.localPort + '/' + version + '/';
+  router.post('/', (req, res) => {
+    if (req.params && req.params[0]) {
+      return ERR.ApiError(res, 400, ERR.ERRNO_BAD_REQUEST, ERR.BAD_REQUEST,
+                          'Ids are not allowed on POST requests');
+    }
+
+    db().then(models => {
+      const prepath = response.getPrepath(req, version);
+      models.createInstance(endpoint, req, exclude).then(instance => {
+        res.location(prepath + endpoint + '(' + instance.id + ')');
+        res.status(201).send(response.generate(instance, associations(models),
+                                               req, version, { exclude }));
+      }).catch(handleModelError(res));
+    }).catch(() => {
+      ERR.ApiError(res, 500, ERR.ERRNO_INTERNAL_ERROR, ERR.INTERNAL_ERROR);
+    });
+  });
+
+  const updateResource = (req, res) => {
     const id = req.params && req.params[0];
     if (!id) {
       return ERR.ApiError(res, 404, ERR.ERRNO_RESOURCE_NOT_FOUND,
@@ -108,14 +80,18 @@ module.exports = function resource(endpoint, exclude, version) {
       Reflect.deleteProperty(req.body, 'id');
       models.updateInstance(endpoint, id, req.body, exclude)
       .then(instance => {
+        const prepath = response.getPrepath(req, version);
         res.location(prepath + endpoint + '(' + id + ')');
         res.status(200).json(response.generate(instance, associations(models),
-                                               prepath, exclude));
+                                               req, version, { exclude }));
       }).catch(handleModelError(res));
     }).catch(() => {
       ERR.ApiError(res, 500, ERR.ERRNO_INTERNAL_ERROR, ERR.INTERNAL_ERROR);
     });
-  });
+  };
+
+  router.patch('', updateResource);
+  router.put('', updateResource);
 
   router.delete('', (req, res) => {
     if (!req.params || !req.params[0]) {
@@ -124,14 +100,12 @@ module.exports = function resource(endpoint, exclude, version) {
     }
 
     db().then(models => {
-      models[endpoint].destroy({
-        where: { id: req.params[0] }
-      }).then(count => {
+      models.deleteInstance(models[endpoint], req.params[0]).then(count => {
         if (!count) {
           return ERR.ApiError(res, 404, ERR.ERRNO_RESOURCE_NOT_FOUND,
                               ERR.NOT_FOUND);
         }
-        res.status(204).send();
+        res.status(200).send();
       });
     }).catch(() => {
       ERR.ApiError(res, 500, ERR.ERRNO_INTERNAL_ERROR, ERR.INTERNAL_ERROR);

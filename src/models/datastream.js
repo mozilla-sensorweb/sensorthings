@@ -129,8 +129,11 @@ module.exports = (sequelize, DataTypes) => {
     classMethods: {
       associate: db => {
         Datastream.belongsTo(db.Things);
+        Datastream.associations.Thing.mandatory = true;
         Datastream.belongsTo(db.Sensors);
+        Datastream.associations.Sensor.mandatory = true;
         Datastream.belongsTo(db.ObservedProperties);
+        Datastream.associations.ObservedProperty.mandatory = true;
         Datastream.hasMany(db.Observations);
       }
     }

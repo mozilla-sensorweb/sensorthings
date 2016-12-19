@@ -5,6 +5,11 @@
 
 Node implementation of the OGC SensorThings API.
 
+# Dependencies
+* Nodejs 6
+* PostgreSQL >9.4
+* PostGIS
+
 # Build
 ```shell
 npm install
@@ -25,7 +30,7 @@ const config = {
     port: 5432,
     name: 'sensorweb',
     user: 'postgres',
-    pass: '12345678'
+    password: '12345678'
   }
 };
 
@@ -45,3 +50,20 @@ npm run test-watch
 ```shell
 npm run example
 ```
+
+# OGC Compliance testing status
+
+We are automatically running the [Test Suite for the OGC SensorThings API](https://github.com/opengeospatial/ets-sta10) with every commit and the results are published [here](https://mozilla-sensorweb.github.io/sensorthings/).
+
+<img src='https://mozilla-sensorweb.github.io/sensorthings/overview-chart.svg'></img>
+
+| Conformance Class                     | Reference | Test Status              |
+|---------------------------------------|-----------|--------------------------| 
+| Sensing Core                          | A.1       | 6 passed, 0 failed       |
+| Filtering Extension                   | A.2       | Testing not started      |
+| Create-Update-Delete                  | A.3       | 9 passed, 0 failed       |
+| Batch Request                         | A.4       | Tests not implemented    |
+| Sensing MultiDatastream Extension     | A.5       | Tests not implemented    |
+| Sensing Data Array Extension          | A.6       | Tests not implemented    |
+| MQTT Extension for Create and Update  | A.7       | Tests not implemented    |
+| MQTT Extension for Receiving Updates  | A.8       | Tests not implemented    |

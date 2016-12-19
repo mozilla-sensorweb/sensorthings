@@ -1,6 +1,6 @@
 {
   "name": "sensorthings",
-  "version": "0.0.1",
+  "version": "0.0.8",
   "description": "Node implementation of the OGC SensorThings API",
   "main": "dist/sensorthings.js",
   "scripts": {
@@ -15,7 +15,8 @@
     "pretest": "./scripts/pretest.sh",
     "test-nocoverage": "NODE_ENV=test ./node_modules/.bin/mocha --delay --compilers js:babel-register test/test_*.js",
     "test-watch": "nodemon -q -x npm test",
-    "test": "./node_modules/.bin/nyc npm run test-nocoverage && npm run lint"
+    "test": "./node_modules/.bin/nyc npm run test-nocoverage && npm run lint",
+    "gh-pages-travis": "gh-pages-travis"
   },
   "keywords": [
     "sensorthings",
@@ -34,6 +35,7 @@
     "case": "^1.4.1",
     "express": "^4.14.0",
     "morgan-body": "^0.9.5",
+    "odata-parser": "mozilla-sensorweb/node-odata-parser",
     "pg": "^6.1.0",
     "sequelize": "^3.24.4"
   },
@@ -44,6 +46,7 @@
     "body-parser": "^1.15.2",
     "coveralls": "^2.11.14",
     "eslint": "^3.8.1",
+    "gh-pages-travis": "^1.0.0",
     "istanbul": "^0.4.5",
     "mocha": "^3.1.0",
     "nodemon": "^1.10.2",
