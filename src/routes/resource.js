@@ -20,6 +20,10 @@ module.exports = function resource(endpoint, exclude, version) {
           ERR.ApiError(res, 404, ERR.ERRNO_RESOURCE_NOT_FOUND, ERR.NOT_FOUND,
                        JSON.stringify(err.errors));
           break;
+        case ERR.NOT_IMPLEMENTED:
+          ERR.ApiError(res, 501, ERR.ERRNO_NOT_IMPLEMENTED,
+                       ERR.NOT_IMPLEMENTED, JSON.stringify(err.errors));
+          break;
         default:
           ERR.ApiError(res, 400, err.errno || ERR.ERRNO_BAD_REQUEST,
                        ERR.BAD_REQUEST, JSON.stringify(err.errors));

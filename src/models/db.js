@@ -13,14 +13,16 @@ import {
   entities,
   integrityConstrains,
   iotId,
-  limit
+  limit,
+  modelNames
 } from '../constants';
 
 import {
   BAD_REQUEST,
   ERRNO_INLINE_CONTENT_NOT_ALLOWED,
   ERRNO_INVALID_ASSOCIATION,
-  NOT_FOUND
+  NOT_FOUND,
+  NOT_IMPLEMENTED
 } from '../errors';
 
 const IDLE           = 0
@@ -127,6 +129,7 @@ export default config => {
 
       const options = {
         exclude: queryOptions.attributes.exclude,
+        expand: req.odata && req.odata.$expand,
         ref: req.params[3],
         select: req.odata && req.odata.$select
       };
@@ -192,10 +195,10 @@ export default config => {
       // So we would need to get all Locations associated to the Thing with
       // id 1.
       //
-      queryOptions.include = [{
+      queryOptions.include.push({
         model: lastResource.model,
         where: { id: lastResource.id }
-      }];
+      });
       queryOptions.attributes.exclude = queryOptions.attributes.exclude.concat([
         lastResource.model.options.name.plural
       ]);
@@ -204,6 +207,7 @@ export default config => {
     const options = {
       count: req.odata && req.odata.$count,
       exclude: queryOptions.attributes.exclude,
+      expand: req.odata && req.odata.$expand,
       ref: req.params[3],
       select: req.odata && req.odata.$select,
       skip: queryOptions.offset,
@@ -234,6 +238,7 @@ export default config => {
                   req.odata.$top : limit;
       const skip = req.odata && req.odata.$skip;
       const orderBy = (req.odata && req.odata.$orderby) || [];
+      const expand = req.odata && req.odata.$expand;
 
       let queryOptions = {
         transaction,
@@ -243,8 +248,30 @@ export default config => {
           const key = Object.keys(field)[0];
           return [key, field[key].toUpperCase()];
         }),
-        attributes: { exclude }
+        attributes: { exclude },
+        include: []
       };
+
+      // The $expand system query option indicates the related entities to be
+      // represented inline. The value of the $expand query option SHALL be a
+      // comma separated list of navigation property names. Additionally, each
+      // navigation property can be followed by a forward slash and another
+      // navigation property to enable identifying a multi-level relationship.
+      if (expand) {
+        expand.forEach(model => {
+          // XXX Issue 185 - Implement multi-level relations for $expand.
+          if (model.split('/').length > 1) {
+            throw Object.create({
+              name: NOT_IMPLEMENTED,
+              errors: 'Multi-level relations for $expand not implemented yet'
+            });
+          }
+          queryOptions.include.push({
+            model: db[modelNames[model]],
+            where: {}
+          });
+        });
+      }
 
       // req.params[0] may contain the id of the final resource from a URL of
       // this form.

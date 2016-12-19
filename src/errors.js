@@ -1,6 +1,7 @@
 // errno
 const errnos = {
   ERRNO_INTERNAL_ERROR                  : 500,
+  ERRNO_NOT_IMPLEMENTED                 : 501,
   ERRNO_RESOURCE_NOT_FOUND              : 404,
   ERRNO_BAD_REQUEST                     : 400,
   ERRNO_VALIDATION_ERROR                : 100,
@@ -15,9 +16,10 @@ exports.errnos = errnos;
 
 // Error messages.
 const errors = {
-  BAD_REQUEST   : 'Bad Request',
-  INTERNAL_ERROR: 'Internal Server Error',
-  NOT_FOUND     : 'Not Found'
+  BAD_REQUEST     : 'Bad Request',
+  INTERNAL_ERROR  : 'Internal Server Error',
+  NOT_FOUND       : 'Not Found',
+  NOT_IMPLEMENTED : 'Not Implemented'
 };
 
 exports.errors = errors;

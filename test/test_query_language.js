@@ -273,7 +273,7 @@ db().then(models => {
             'Locations@iot.navigationLink': selfLink + '/Locations',
             'HistoricalLocations@iot.navigationLink': selfLink +
                                                       '/HistoricalLocations',
-            'Datastreams@iot.navigationLink': selfLink + '/Datastreams',
+            'Datastreams@iot.navigationLink': selfLink + '/Datastreams'
           });
           result.should.be.deepEqual(expected);
           done();
@@ -330,6 +330,82 @@ db().then(models => {
           done();
         });
       });
+    });
+
+    describe('$expand', () => {
+      let id, selfLink;
+      before(done => {
+        models.sequelize.transaction(transaction => {
+          return Promise.all(Object.keys(CONST.entities).map(name => {
+            return models[name].destroy({ transaction, where: {} });
+          }));
+        }).then(() => {
+          const body = Object.assign({}, CONST.ThingsEntity, {
+            'Datastreams': Object.assign({}, CONST.DatastreamsEntity, {
+              'Observations': [Object.assign({}, CONST.ObservationsEntity, {
+                'FeatureOfInterest': undefined,
+                'Datastream': undefined
+              }), Object.assign({}, CONST.ObservationsEntity, {
+                'FeatureOfInterest': undefined,
+                'Datastream': undefined
+              })],
+              'Thing': undefined
+            }),
+            'Locations': [Object.assign({}, CONST.LocationsEntity)],
+          });
+          server.post(prepath + modelName)
+          .send(body)
+          .expect(201)
+          .end((err, res) => {
+            should.not.exist(err);
+            selfLink = res.body['@iot.selfLink'];
+            id = res.body['@iot.id'];
+            done();
+          });
+        });
+      });
+
+      it('should not expand any association if no $expand is present',
+         done => {
+        const url = modelName;
+        get(url).then(result => {
+          result.should.be.deepEqual({
+            '@iot.count': 1,
+            value: [Object.assign({}, CONST[modelName + 'Entity'], {
+              '@iot.selfLink': selfLink,
+              '@iot.id': id,
+              'Locations@iot.navigationLink': selfLink + '/Locations',
+              'HistoricalLocations@iot.navigationLink': selfLink +
+                                                        '/HistoricalLocations',
+              'Datastreams@iot.navigationLink': selfLink + '/Datastreams'
+            })]
+          });
+          done();
+        });
+      });
+
+      it('should expand Datastreams for request with $expand=Datastreams',
+         done => {
+        const url = modelName + '?$expand=Datastreams';
+        get(url).then(result => {
+          const datastreams = result.value[0].Datastreams;
+          datastreams.should.be.instanceof(Array).and.have.lengthOf(1);
+          done();
+        });
+      });
+
+      it('should expand Datastreams and Things for request with ' +
+         '$expand=Datastreams,Locations', done => {
+        const url = modelName + '?$expand=Datastreams,Locations';
+        get(url).then(result => {
+          const datastreams = result.value[0].Datastreams;
+          const locations = result.value[0].Locations;
+          datastreams.should.be.instanceof(Array).and.have.lengthOf(1);
+          locations.should.be.instanceof(Array).and.have.lengthOf(1);
+          done();
+        });
+      });
+
     });
   });
 });
