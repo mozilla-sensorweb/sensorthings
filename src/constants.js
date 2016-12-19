@@ -139,12 +139,12 @@ export const belongsToMany = 'BelongsToMany';
 // Table 25 of the spec listed SensorThings API’s integrity constraints
 // when deleting an entity.
 export const integrityConstrains = {
-  'Things': 'Datastreams',
-  'Locations': 'HistoricalLocations',
-  'Datastreams': 'Observations',
-  'Sensors': 'Datastreams',
-  'ObservedProperties': 'Datastreams',
-  'FeaturesOfInterest': 'Observations'
+  'Things': ['Datastreams', 'HistoricalLocations'],
+  'Locations': ['HistoricalLocations'],
+  'Datastreams': ['Observations'],
+  'Sensors': ['Datastreams'],
+  'ObservedProperties': ['Datastreams'],
+  'FeaturesOfInterest': ['Observations']
 };
 
 // DB query constants.

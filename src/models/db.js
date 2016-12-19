@@ -393,7 +393,7 @@ export default config => {
   };
 
   const deleteInstance = (transaction, model, id) => {
-    const constrain = integrityConstrains[db.getPlural(model.options)];
+    const constrains = integrityConstrains[db.getPlural(model.options)] || [];
     // We start from the bottom, removing the entities associated to the
     // instance to be deleted as enforced by the integrity constrains
     // defined on the Table 25 from 10.4 Delete an entity
@@ -401,7 +401,7 @@ export default config => {
     let promises = [];
     Object.keys(model.associations).forEach(key => {
       const association = model.associations[key];
-      if (constrain && db.getPlural(association.options) === constrain) {
+      if (constrains.indexOf(db.getPlural(association.options)) > -1) {
         promises.push(association.target.findAll({
           include: [{
             model,
