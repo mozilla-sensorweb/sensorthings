@@ -239,6 +239,7 @@ export default config => {
       const skip = req.odata && req.odata.$skip;
       const orderBy = (req.odata && req.odata.$orderby) || [];
       const expand = req.odata && req.odata.$expand;
+      const filter = req.odata && req.odata.$filter;
 
       let queryOptions = {
         transaction,
@@ -249,7 +250,8 @@ export default config => {
           return [key, field[key].toUpperCase()];
         }),
         attributes: { exclude },
-        include: []
+        include: [],
+        where: {}
       };
 
       // The $expand system query option indicates the related entities to be
@@ -271,6 +273,10 @@ export default config => {
             where: {}
           });
         });
+      }
+
+      if (filter) {
+        Object.assign(queryOptions.where, filter);
       }
 
       // req.params[0] may contain the id of the final resource from a URL of

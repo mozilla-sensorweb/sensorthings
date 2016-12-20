@@ -147,6 +147,67 @@ db().then(models => {
       });
     });
 
+    describe('$filter', () => {
+      const count = 15;
+
+      before(done => {
+        const model = models.Observations;
+        const entity = Object.assign({}, CONST.ObservationsEntity);
+        let promises = [];
+        model.destroy({ where: {} }).then(() => {
+          for (let i = 0; i < count; i++) {
+            entity.phenomenonTime = Date.now();
+            entity.result = String(i);
+            promises.push(model.create(entity));
+          }
+          Promise.all(promises).then(() => {
+            done()
+          });
+        });
+      });
+
+      it('should filter by responding one value', done => {
+        get(CONST.observations + '?$filter=result eq \'0\'')
+        .then(result => {
+          result[CONST.iotCount].should.be.equal(1);
+          result.value[0].result.should.be.equal('0');
+          done();
+        });
+      });
+
+      it('should filter by responding more than one value', done => {
+        get(CONST.observations + '?$filter=result gt \'1\'')
+        .then(result => {
+          result[CONST.iotCount].should.be.equal(13);
+          done();
+        });
+      });
+
+      it('should filter ints with strings', done => {
+        get(CONST.observations + '?$filter=result gt \'5\'')
+        .then(result => {
+          result[CONST.iotCount].should.be.equal(4);
+          done();
+        });
+      });
+
+      it('should ignore filter if is not filtering by literal', done => {
+        get(CONST.observations + '?$filter=result gt phenomenonTime')
+        .then(result => {
+          result[CONST.iotCount].should.be.equal(15);
+          done();
+        });
+      });
+
+      it('should ignore filter if is not a property', done => {
+        get(CONST.observations + '?$filter=3 gt phenomenonTime')
+        .then(result => {
+          result[CONST.iotCount].should.be.equal(15);
+          done();
+        });
+      });
+    });
+
     describe('$orderby', () => {
       describe('Only 1 field', () => {
         const count = 9;
