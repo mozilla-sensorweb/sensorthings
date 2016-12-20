@@ -17,7 +17,7 @@ export default version => {
   return (req, res, next) => {
     // Removes starting and trailing '/' and the version and splits the url
     // in path resources.
-    const resources = req.originalUrl
+    const resources = req.baseUrl
                          .replace(/^\/?|\/?$/, '')
                          .replace(version + '/', '')
                          .split('/');
