@@ -108,7 +108,7 @@ const generate = (resource, associations, req, version, options) => {
     // returned along with the result. A $count query option with a value of
     // false (or not specified) hints that the service SHALL not return a
     // count.
-    if (count !== 'false') {
+    if (count !== false) {
       response[iotCount] = totalCount;
     }
 
