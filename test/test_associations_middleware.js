@@ -122,6 +122,17 @@ db().then(models => {
       });
     });
 
+    describe('Query options URL', () => {
+      it('should allow URLs with nested query options', done => {
+        server.get(prepath + '/Things?$expand=Datastreams/Things')
+        .expect('Content-Type', /json/)
+        .expect(200)
+        .end(() => {
+          done();
+        });
+      })
+    });
+
     describe('Valid associations and found entity', () => {
       let instances = {};
       beforeEach(done => {
