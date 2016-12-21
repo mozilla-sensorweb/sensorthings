@@ -138,8 +138,7 @@ db().then(models => {
         });
       });
 
-      // XXX OData parser. $count is not supported.
-      xit('should respond without count', done => {
+      it('should respond without count', done => {
         get(modelName + '?$count=false')
         .then(result => {
           should.not.exist(result[CONST.iotCount]);
