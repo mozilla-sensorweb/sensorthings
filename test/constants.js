@@ -105,6 +105,56 @@ let testEntities = {
   }
 };
 
+let testCreateObservationsRequestBodies = {
+  CreateObservationsRequestOneObservation:
+  [
+    {
+      Datastream: { '@iot.id': 1 },
+      components: [ 'phenomenonTime', 'result', 'FeatureOfInterest/id' ],
+      'dataArray@iot.count': 2,
+      dataArray: [ [ '2010-12-23T10:20:00-0700', 20, 1 ],
+                   [ '2010-12-23T10:21:00-0700', 30, 1 ] ]
+    }
+  ],
+  CreateObservationsRequestMissingDatastream:
+  [
+    {
+      components: [ 'phenomenonTime', 'result', 'FeatureOfInterest/id' ],
+      'dataArray@iot.count': 2,
+      dataArray: [ [ '2010-12-23T10:20:00-0700', 20, 1 ],
+                   [ '2010-12-23T10:21:00-0700', 30, 1 ] ]
+    }
+  ],
+  CreateObservationsRequestMissingPhenomenonTime:
+  [
+    {
+      Datastream: { '@iot.id': 1 },
+      components: [ 'result', 'FeatureOfInterest/id' ],
+      'dataArray@iot.count': 2,
+      dataArray: [ [ 20, 1 ],
+                   [ 30, 1 ] ]
+    }
+  ],
+  CreateObservationsRequestComponentsDataArrayMismatch:
+  [
+    {
+      Datastream: { '@iot.id': 1 },
+      components: [ 'phenomenonTime', 'result', 'FeatureOfInterest/id' ],
+      'dataArray@iot.count': 2,
+      dataArray: [ [ '2010-12-23T10:20:00-0700', 1 ],
+                   [ '2010-12-23T10:21:00-0700', 1 ] ]
+    }
+  ],
+  CreateObservationsRequestNotArray:
+  {
+    Datastream: { '@iot.id': 1 },
+     components: [ 'phenomenonTime', 'result', 'FeatureOfInterest/id' ],
+    'dataArray@iot.count': 2,
+    dataArray: [ [ '2010-12-23T10:20:00-0700', 20, 1 ],
+                 [ '2010-12-23T10:21:00-0700', 30, 1 ] ]
+  },
+};
+
 // Mandatory associations
 
 let datastream = testEntities.DatastreamsEntity;
@@ -116,4 +166,7 @@ let observation = testEntities.ObservationsEntity;
 observation.Datastream = testEntities.DatastreamsEntity;
 observation.FeatureOfInterest = testEntities.FeaturesOfInterestEntity;
 
-module.exports = Object.assign({}, testConstants, testEntities);
+module.exports = Object.assign({},
+                               testConstants,
+                               testEntities,
+                               testCreateObservationsRequestBodies);

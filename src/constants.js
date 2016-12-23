@@ -75,6 +75,11 @@ export const modelNames = {
   'Things': 'Things'
 };
 
+export const createObservations = 'CreateObservations';
+export const dataArray = 'dataArray';
+export const phenomenonTime = 'phenomenonTime';
+export const result = 'result';
+
 export const protocolHeader = 'x-forwarded-proto';
 export const hostHeader = 'x-forwarded-server';
 
