@@ -21,7 +21,7 @@ import * as ERR   from '../errors';
  *
  **/
 
-export default version => {
+export default () => {
   return (req, res) => {
 
     // Required properties of an object in the body:
@@ -79,12 +79,12 @@ export default version => {
     for (let i = 0; i < body.length; i++) {
       try {
         validateBody(body[i]);
-      } catch(ex) {
+      } catch (ex) {
         return ERR.ApiError(res, 400, ex.errno, ex.name, ex.errors);
       }
     }
 
-    res.status(201).send(version + ', Validation successful!!!\n');
+    ERR.ApiError(res, 501, ERR.ERRNO_NOT_IMPLEMENTED, ERR.NOT_IMPLEMENTED);
   };
 };
 
