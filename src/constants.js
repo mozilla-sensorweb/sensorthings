@@ -76,9 +76,6 @@ export const modelNames = {
 };
 
 export const createObservations = 'CreateObservations';
-export const dataArray = 'dataArray';
-export const phenomenonTime = 'phenomenonTime';
-export const result = 'result';
 
 export const protocolHeader = 'x-forwarded-proto';
 export const hostHeader = 'x-forwarded-server';
@@ -154,3 +151,16 @@ export const integrityConstrains = {
 
 // DB query constants.
 export const limit = 100;
+
+// Data Array Extension
+export const dataArray = 'dataArray';
+export const dataArrayIotCount = 'dataArray@iot.count';
+export const error = 'error';
+
+// `components` in CreateObservation request
+export const components = {
+  result: 'result',
+  phenomenonTime: 'phenomenonTime',
+  featureOfInterestId: 'FeatureOfInterest/id'
+};
+
