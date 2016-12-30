@@ -99,7 +99,15 @@ export default config => {
    */
   db.createInstance = (modelName, req, exclude) => {
     return db.sequelize.transaction(transaction => {
-      return db[modelName].create(req.body, {
+      return db[modelName].create(Object.assign({}, req.body, {
+        // In order to support a multi-tenant architecture, the data model has
+        // an userId and a clientId fields that allow consumers of this module
+        // to identify the owner of each data entity.
+        // We allow setting these two values directly in the Request object as
+        // `userId` and `clientId`.
+        userId: req.userId,
+        clientId: req.clientId
+      }), {
         transaction
       }).then(instance => {
         return Association.maybeCreate(transaction, instance,
@@ -118,7 +126,11 @@ export default config => {
       queryOptions.attributes.include = [ property ];
     }
 
-    return db[modelName].findById(req.params[0], queryOptions)
+    queryOptions.where.id = req.params[0];
+    // Note: Do not use findById as it overrides `where` value.
+    // https://github.com/sequelize/sequelize/
+    // blob/3e5b8772ef75169685fc96024366bca9958fee63/lib/model.js#L1464
+    return db[modelName].findOne(queryOptions)
     .then(instance => {
       if (!instance) {
         return Promise.reject({
@@ -239,6 +251,23 @@ export default config => {
     });
   };
 
+  const _where = req => {
+    let where = {};
+    // In order to support a multi-tenant architecture, the data model has
+    // an userId and a clientId fields that allow consumers of this module
+    // to identify the owner of each data entity.
+    // We allow setting these two values directly in the Request object as
+    // `userId` and `clientId`.
+    if (req.clientId) {
+      where.clientId = req.clientId;
+    }
+    if (req.userId) {
+      where.userId = req.userId;
+    }
+
+    return where;
+  };
+
   db.getInstance = (modelName, req, exclude) => {
     return db.sequelize.transaction(transaction => {
       // By default we set a limit of 100 entities max.
@@ -248,6 +277,8 @@ export default config => {
       const orderBy = (req.odata && req.odata.$orderby) || [];
       const expand = req.odata && req.odata.$expand;
       const filter = req.odata && req.odata.$filter;
+
+      let where = _where(req);
 
       let queryOptions = {
         transaction,
@@ -259,7 +290,7 @@ export default config => {
         }),
         attributes: { exclude },
         include: [],
-        where: {}
+        where
       };
 
       // The $expand system query option indicates the related entities to be
@@ -335,11 +366,13 @@ export default config => {
   /*
    * Updates an specific model instance and returns the updated object.
    */
-  db.updateInstance = (model, instanceId, values, exclude) => {
+  db.updateInstance = (model, instanceId, req, exclude) => {
+    const values = req.body;
+    let where = Object.assign({}, _where(req), { id: instanceId });
     return db.sequelize.transaction(transaction => {
-      return db[model].update(values, {
-        where: { id: instanceId }
-      }, { transaction }).then(affected => {
+      return db[model].update(
+        values, { where }, { transaction }
+      ).then(affected => {
         const affectedRows = affected[0];
         if (affectedRows !== 1) {
           return Promise.reject({
@@ -421,8 +454,22 @@ export default config => {
     });
   };
 
-  const deleteInstance = (transaction, model, id) => {
+  const deleteInstance = (transaction, model, id, clientId, userId) => {
     const constrains = integrityConstrains[db.getPlural(model.options)] || [];
+
+    let where = { id };
+    // In order to support a multi-tenant architecture, the data model has
+    // an userId and a clientId fields that allow consumers of this module
+    // to identify the owner of each data entity.
+    // We allow setting these two values directly in the Request object as
+    // `userId` and `clientId`.
+    if (clientId) {
+      where.clientId = clientId;
+    }
+    if (userId) {
+      where.userId = userId;
+    }
+
     // We start from the bottom, removing the entities associated to the
     // instance to be deleted as enforced by the integrity constrains
     // defined on the Table 25 from 10.4 Delete an entity
@@ -434,7 +481,7 @@ export default config => {
         promises.push(association.target.findAll({
           include: [{
             model,
-            where: { id }
+            where
           }]
         }).then(results => {
           if (!results || !results.length) {
@@ -443,7 +490,8 @@ export default config => {
           let morePromises = [];
           results.forEach(result => {
             morePromises.push(
-              deleteInstance(transaction, association.target, result.id)
+              deleteInstance(transaction, association.target,
+                             result.id, clientId, userId)
             );
           });
           return Promise.all(morePromises);
@@ -451,13 +499,14 @@ export default config => {
       }
     });
     return Promise.all(promises).then(() => {
-      return model.destroy({ where: { id } });
+      return model.destroy({ where });
     });
   };
 
-  db.deleteInstance = (model, id) => {
+  db.deleteInstance = (model, req) => {
     return db.sequelize.transaction(transaction => {
-      return deleteInstance(transaction, model, id);
+      return deleteInstance(transaction, model,
+                            req.params[0], req.clientId, req.userId);
     });
   };
 

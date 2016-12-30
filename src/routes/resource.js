@@ -78,7 +78,7 @@ module.exports = function resource(endpoint, exclude, version) {
 
     db().then(models => {
       Reflect.deleteProperty(req.body, 'id');
-      models.updateInstance(endpoint, id, req.body, exclude)
+      models.updateInstance(endpoint, id, req, exclude)
       .then(instance => {
         const prepath = response.getPrepath(req, version);
         res.location(prepath + endpoint + '(' + id + ')');
@@ -100,7 +100,7 @@ module.exports = function resource(endpoint, exclude, version) {
     }
 
     db().then(models => {
-      models.deleteInstance(models[endpoint], req.params[0]).then(count => {
+      models.deleteInstance(models[endpoint], req).then(count => {
         if (!count) {
           return ERR.ApiError(res, 404, ERR.ERRNO_RESOURCE_NOT_FOUND,
                               ERR.NOT_FOUND);

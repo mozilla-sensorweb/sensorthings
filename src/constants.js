@@ -88,7 +88,9 @@ export const featureOfInterestId = 'FeatureOfInterestId';
 
 export const createdAt = 'createdAt';
 export const updatedAt = 'updatedAt';
-export const commonExcludedFields = [createdAt, updatedAt];
+export const userId = 'userId';
+export const clientId = 'clientId';
+export const commonExcludedFields = [createdAt, updatedAt, userId, clientId];
 export const excludedFields = {
   'Datastreams': commonExcludedFields.concat([thing, thingId,
                                               sensor, sensorId,
