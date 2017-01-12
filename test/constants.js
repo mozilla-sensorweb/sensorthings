@@ -19,7 +19,7 @@ const testConstants = Object.assign({}, Const, {
     'coordinates': [114.05, 52.05]
   },
   anotherparameters: [anotherjson],
-  anotherresult: anotherjson,
+  anotherresult: 'anotherjson',
   anothertime: '2015-02-25T20:00:00.000Z',
   anotherunitOfMeasurement: {
     'name': 'degree Celsius',
@@ -39,7 +39,7 @@ const testConstants = Object.assign({}, Const, {
   name: 'name',
   navigationLink: '@iot.navigationLink',
   parameters: [json],
-  result: json,
+  result: 'json',
   time: '2015-01-25T20:00:00.000Z',
   unitOfMeasurement: {
     'symbol': '%',
