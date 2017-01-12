@@ -113,6 +113,39 @@ commonTests(observations, 8885, mandatory, optional).then(tester => {
         });
       });
 
+      describe('More than one Observation without FeatureOfInterest', () => {
+        let body, countObject;
+        beforeEach(done => {
+          db().then(models => {
+            const datastreamEntity = Object.assign({}, DatastreamsEntity);
+            datastreamEntity.Thing.Locations = LocationsEntity;
+            models[datastreams].create(datastreamEntity, {
+              include: {
+                model: models.Things, include: { model: models.Locations }
+              }
+            }).then(relation => {
+              body = Object.assign({}, ObservationsEntity);
+              body.Datastream = {
+                '@iot.id': relation.id
+              };
+              Reflect.deleteProperty(body, featureOfInterest);
+              countObject = {
+                'Observations': { count: 1 },
+                'Datastreams': { count: 1 },
+                'FeaturesOfInterest': { count: 1 }
+              };
+              tester.postSuccess(done, body, countObject);
+            });
+          });
+        });
+
+        it('should create only 1 FeatureOfInterest for a Datastream with ' +
+           'Observations and a linked FeatureOfInterest', done => {
+          countObject.Observations.count++;
+          tester.postSuccess(done, body, countObject);
+        });
+      });
+
       it('should return 201 when linking a Datastream entity with a linked ' +
          'Thing', done => {
         db().then(models => {

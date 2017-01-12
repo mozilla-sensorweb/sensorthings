@@ -423,7 +423,9 @@ module.exports = (endpoint, port, mandatory, optional = []) => {
             res.header.location.should.be.equal(fullPrepath + path);
             const expectedModels = Object.keys(expected);
             Promise.all(expectedModels.map(name => {
-              return models[name].findAndCountAll().then(result => {
+              return models[name].findAndCountAll({
+                order: 'id desc'
+              }).then(result => {
                 const resultObject = {};
                 resultObject[name] = result;
                 return Promise.resolve(resultObject);

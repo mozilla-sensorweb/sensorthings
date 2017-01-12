@@ -15,6 +15,7 @@ import {
   featuresOfInterest,
   iotId,
   locations,
+  observations,
   observedProperties,
   sensors,
   things
@@ -32,17 +33,24 @@ import {
 /*
  * Converts a Location into a FeatureOfInterest
  */
-const featureOfInterestFromLocation = location => {
-  if (!location) {
+const featureOfInterestFromLocation = locationObject => {
+  if (!locationObject) {
     return null;
   }
 
+  const options = locationObject.$modelOptions && locationObject.$modelOptions;
+  if (options && options.name.plural === featuresOfInterest) {
+    return {
+      '@iot.id': locationObject.id
+    };
+  }
+
+  const location = locationObject.dataValues || locationObject;
   const feature = Object.assign({}, {
     name: location.name,
     description: location.description,
     encodingType: location.encodingType
   });
-
   feature.feature = Object.assign({}, location.location);
   Reflect.deleteProperty(feature, 'location');
   return feature;
@@ -358,19 +366,35 @@ const maybeCreate = (transaction, instance, req, exclude, thingLocation) => {
   });
 }
 
+const sameLocation = (loc1, loc2) => {
+  if (!loc1 || !loc2) {
+    return false;
+  }
+  return JSON.stringify(loc1) === JSON.stringify(loc2);
+}
+
 const getLocationFromDatastream = (datastreamEntity) => {
   return db().then(models => {
+    const includeDatastreamsAndLocations = [
+      models[locations], {
+        model: models[datastreams],
+        include: {
+          model: models[observations],
+          include: [models[featuresOfInterest]]
+        }
+      }
+    ];
     if (datastreamEntity[iotId]) {
       return findLocation(datastreams, datastreamEntity[iotId], {
         model: models[things],
-        include: models[locations]
+        include: includeDatastreamsAndLocations
       });
     }
 
     if (datastreamEntity.Thing) {
       if (datastreamEntity.Thing[iotId]) {
         return findLocation(things, datastreamEntity.Thing[iotId],
-                            models[locations]);
+                            includeDatastreamsAndLocations);
       }
 
       if (datastreamEntity.Thing.Locations) {
@@ -387,31 +411,54 @@ const getLocationFromDatastream = (datastreamEntity) => {
   });
 }
 
+
 const findLocation = (modelName, id, include = []) => {
   return db().then(models => {
     return models[modelName].findOne({
         where: { id: id },
         include: include
       }).then(instance => {
+        let _currentThing, loc;
         try {
-          let _currentLoc;
           switch (modelName) {
             case datastreams:
-              _currentLoc = instance.Thing.Locations[0];
+              _currentThing = instance.Thing;
+              loc = _currentThing.Locations[0];
               break;
             case things:
-              _currentLoc = instance.Locations[0];
+              _currentThing = instance;
+              loc = instance.Locations[0];
               break;
             case locations:
-              _currentLoc = instance;
+              loc = instance;
               break;
             default:
               break;
           }
-          return _currentLoc.dataValues;
         } catch(e) {
-          return null;
+          loc = null;
         }
+
+        if (!_currentThing) {
+          return loc;
+        }
+
+        // We need to check if for any of the Datastreams of that Thing,
+        // already exists an Observation which FeatureOfInterest matches
+        // the last location of the Thing.
+        const thingDatastreams = _currentThing.Datastreams || [];
+        for (let i = 0; i < thingDatastreams.length; i++) {
+          const currentDatastream = thingDatastreams[i];
+          for (let j = 0; j < currentDatastream.Observations.length; j++) {
+            const currentObservation = currentDatastream.Observations[j];
+            const foi = currentObservation.FeatureOfInterest;
+            if (sameLocation(foi && foi.feature, loc && loc.location)) {
+              return foi;
+            }
+          }
+        }
+
+        return loc;
       });
   });
 }
