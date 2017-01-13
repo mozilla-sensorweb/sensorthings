@@ -53,6 +53,16 @@ commonTests(observations, 8885, mandatory, optional).then(tester => {
     });
 
     describe('POST without FeatureOfInterest', () => {
+      beforeEach(done => {
+        db().then(models => {
+          models.sequelize.transaction(transaction => {
+            return Promise.all(Object.keys(entities).map(name => {
+              return models[name].destroy({ transaction, where: {} });
+            }));
+          }).then(() => done());
+        });
+      });
+
       it('should return 400 if no inline Datastream.Location exist', done => {
         let body = Object.assign({}, ObservationsEntity);
         Reflect.deleteProperty(body, featureOfInterest);
@@ -73,6 +83,32 @@ commonTests(observations, 8885, mandatory, optional).then(tester => {
             tester.postError(done, body, 400,
                              ERR.ERRNO_MANDATORY_ASSOCIATION_MISSING,
                              ERR.BAD_REQUEST);
+          });
+        });
+      });
+
+      it('should return 201 when linking a Datastream entity with a linked ' +
+         'Thing', done => {
+        db().then(models => {
+          const thingEntity = Object.assign({}, ThingsEntity);
+          thingEntity.Locations = LocationsEntity;
+          models[things].create(thingEntity, {
+            include: [models.Locations]
+          }).then(relation => {
+            let body = Object.assign({}, ObservationsEntity);
+            body.Datastream = Object.assign({}, DatastreamsEntity);
+            body.Datastream.Thing = {
+              '@iot.id': relation.id
+            };
+            Reflect.deleteProperty(body, featureOfInterest);
+            const countObject = {
+              'Observations': { count: 1 },
+              'Datastreams': { count: 1 },
+              'Things': { count: 1 },
+              'FeaturesOfInterest': { count: 1 }
+            }
+
+            tester.postSuccess(done, body, countObject);
           });
         });
       });
@@ -113,28 +149,36 @@ commonTests(observations, 8885, mandatory, optional).then(tester => {
         });
       });
 
-      it('should return 201 when linking a Datastream entity with a linked ' +
-         'Thing', done => {
+      it('should not create a new FeatureOfInterest if there is already one ' +
+         'for that Datastream', done => {
         db().then(models => {
-          const thingEntity = Object.assign({}, ThingsEntity);
-          thingEntity.Locations = LocationsEntity;
-          models[things].create(thingEntity, {
-            include: [models.Locations]
+          const datastreamEntity = Object.assign({}, DatastreamsEntity);
+          datastreamEntity.Thing.Locations = LocationsEntity;
+          models[datastreams].create(datastreamEntity, {
+            include: {
+              model: models.Things, include: { model: models.Locations }
+            }
           }).then(relation => {
             let body = Object.assign({}, ObservationsEntity);
-            body.Datastream = Object.assign({}, DatastreamsEntity);
-            body.Datastream.Thing = {
+            body.Datastream = {
               '@iot.id': relation.id
             };
             Reflect.deleteProperty(body, featureOfInterest);
             const countObject = {
               'Observations': { count: 1 },
               'Datastreams': { count: 1 },
-              'Things': { count: 1 },
               'FeaturesOfInterest': { count: 1 }
-            }
+            };
 
-            tester.postSuccess(done, body, countObject);
+            tester.postSuccess(() => {
+              body = Object.assign({}, ObservationsEntity);
+              body.Datastream = {
+                '@iot.id': relation.id
+              };
+              Reflect.deleteProperty(body, featureOfInterest);
+              countObject.Observations.count++;
+              tester.postSuccess(done, body, countObject);
+            }, body, countObject);
           });
         });
       });
