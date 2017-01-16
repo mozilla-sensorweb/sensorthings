@@ -76,7 +76,7 @@ module.exports = (sequelize, DataTypes) => {
         this.setDataValue('phenomenonTime', new Date(value).toISOString());
       }
     },
-    result: { type: DataTypes.JSONB, allowNull: false },
+    result: { type: DataTypes.STRING, allowNull: false },
     resultTime: {
       // Note: Many resource-constrained sensing devices do not have a clock.
       // As a result, a client may omit resultTime when POST new Observations,
