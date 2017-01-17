@@ -454,6 +454,16 @@ db().then(models => {
         });
       });
 
+      it('should expand recursively requesting to /Datastreams?$expand=Things',
+         done => {
+        const url = modelName + '(' + id + ')/Datastreams?$expand=Things';
+        get(url).then(result => {
+          const thing = result.value[0].Thing;
+          thing.id.should.be.equal(id);
+          done();
+        });
+      });
+
       it('should expand Datastreams and Things for request with ' +
          '$expand=Datastreams,Locations', done => {
         const url = modelName + '?$expand=Datastreams,Locations';
