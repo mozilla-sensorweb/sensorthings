@@ -5,6 +5,7 @@
 'use strict';
 
 import { encodingTypes }   from '../constants';
+import * as ERR            from '../errors';
 
 /**
  * 8.2.2 Location
@@ -95,6 +96,25 @@ module.exports = (sequelize, DataTypes) => {
             const thing = db.HistoricalLocations.associations.Thing;
             return historicalLocation[thing.accessors.set](associationId, {
               transaction
+            }).then(() => {
+              // If there is already a Location with the same encodingType,
+              // return an error.
+              return db.Locations.findAndCountAll({
+                include: [{
+                  model: db.Things,
+                  where: { id: associationId }
+                }]
+              }).then(result => {
+                if (result.count > 0) {
+                  for (let i = 0; i < result.rows.length; i++) {
+                    if (result.rows[i].encodingType === instance.encodingType) {
+                      throw Object({
+                        errno: ERR.ERRNO_LOCATION_SAME_ENCODING_TYPE
+                      });
+                    }
+                  }
+                }
+              });
             });
           });
         };
