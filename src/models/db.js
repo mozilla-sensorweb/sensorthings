@@ -195,13 +195,22 @@ export default config => {
       // So we would need to get all Locations associated to the Thing with
       // id 1.
       //
-      queryOptions.include.push({
-        model: lastResource.model,
-        where: { id: lastResource.id }
+
+      const expanded = queryOptions.include.some(include => {
+        return include.model === lastResource.model;
       });
-      queryOptions.attributes.exclude = queryOptions.attributes.exclude.concat([
-        lastResource.model.options.name.plural
-      ]);
+
+      if (!expanded) {
+        queryOptions.include.push({
+          model: lastResource.model,
+          where: { id: lastResource.id }
+        });
+
+        let excluded = queryOptions.attributes.exclude;
+        queryOptions.attributes.exclude = excluded.concat([
+          lastResource.model.options.name.plural
+        ]);
+      }
     }
 
     const options = {
@@ -272,6 +281,11 @@ export default config => {
             model: db[modelNames[model]],
             where: {}
           });
+
+          const filterExclude = queryOptions.attributes.exclude.filter(att => {
+            return att !== entities[model] && att !== model;
+          });
+          queryOptions.attributes.exclude = filterExclude;
         });
       }
 
