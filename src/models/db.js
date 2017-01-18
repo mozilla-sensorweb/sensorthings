@@ -21,8 +21,7 @@ import {
   BAD_REQUEST,
   ERRNO_INLINE_CONTENT_NOT_ALLOWED,
   ERRNO_INVALID_ASSOCIATION,
-  NOT_FOUND,
-  NOT_IMPLEMENTED
+  NOT_FOUND
 } from '../errors';
 
 const IDLE           = 0
@@ -270,20 +269,12 @@ export default config => {
       // navigation property to enable identifying a multi-level relationship.
       if (expand) {
         expand.forEach(model => {
-          // XXX Issue 185 - Implement multi-level relations for $expand.
-          if (model.split('/').length > 1) {
-            throw Object.create({
-              name: NOT_IMPLEMENTED,
-              errors: 'Multi-level relations for $expand not implemented yet'
-            });
-          }
-          queryOptions.include.push({
-            model: db[modelNames[model]],
-            where: {}
-          });
+          const models = model.split('/');
+          const include = getInclude(models);
+          queryOptions.include.push(include);
 
           const filterExclude = queryOptions.attributes.exclude.filter(att => {
-            return att !== entities[model] && att !== model;
+            return att !== entities[models[0]] && att !== models[0];
           });
           queryOptions.attributes.exclude = filterExclude;
         });
@@ -322,6 +313,20 @@ export default config => {
       return get(modelName, req, queryOptions);
     });
   };
+
+  const getInclude = models => {
+    let includes = {};
+    let next = includes;
+    models.forEach((model, index) => {
+      next.model = db[modelNames[model]];
+      if (index < models.length - 1) {
+        next.include = {};
+        next = next.include;
+      }
+    });
+
+    return includes;
+  }
 
   /*
    * Updates an specific model instance and returns the updated object.

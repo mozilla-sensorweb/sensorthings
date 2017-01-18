@@ -476,6 +476,19 @@ db().then(models => {
         });
       });
 
+      describe('multilevel relations', () => {
+        const url = modelName + '?$expand=Datastreams/Observations';
+        it('returns multilevel relations when they exist', done => {
+          get(url).then(result => {
+            const datastreams = result.value[0].Datastreams;
+            const observations = datastreams[0].Observations;
+            datastreams.should.be.instanceof(Array).and.have.lengthOf(1);
+            observations.should.be.instanceof(Array).and.have.lengthOf(2);
+            done();
+          });
+        });
+      });
+
     });
   });
 });
