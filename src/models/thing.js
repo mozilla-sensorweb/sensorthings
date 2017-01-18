@@ -79,6 +79,25 @@ module.exports = (sequelize, DataTypes) => {
             return historicalLocation[locations.accessors.add](
               associationId, { transaction }
             );
+          }).then(() => {
+            // If there is already a Location with the same encodingType,
+            // lets replace it.
+            return db.Locations.findAndCountAll({
+              include: [{
+                model: db.Things,
+                where: { id: instance.id }
+              }]
+            }).then(result => {
+              if (result.count > 0) {
+                return db.Locations.findById(associationId).then(loc => {
+                  result.rows.forEach(row => {
+                    if (row.encodingType === loc.encodingType) {
+                      instance.removeLocation(row);
+                    }
+                  });
+                });
+              }
+            });
           });
         };
       }
