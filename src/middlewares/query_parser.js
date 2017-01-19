@@ -10,6 +10,21 @@ fs.readdirSync(path.join(__dirname, 'query')).forEach(file => {
   parsers['$' + file.replace('.js', '')] = require(currentPath);
 });
 
+// Utility method that given an array of models (or multilevel models),
+// it returns an object, removing duplicates and nesting elements
+// ['A/B', A/D', 'C'] => {'A': {'B': {}, 'D': {}}, 'C': {}}
+const normalizeExpand = expand => {
+  return expand.reduce((result, current) => {
+    const aux = current.split('/');
+    let next = result;
+    aux.forEach(model => {
+      next[model] = next[model] || {};
+      next = next[model];
+    });
+    return result;
+  }, {});
+};
+
 const getFilter = parsedFilter => {
   if (!parsedFilter) {
     return {};
@@ -61,6 +76,10 @@ export default (req, res, next) => {
     req.odata = odata.parse(decodedQuery);
     if (req.odata && req.odata.$filter) {
       req.odata.$filter = getFilter(req.odata.$filter);
+    }
+
+    if (req.odata && req.odata.$expand) {
+      req.normalizedExpand = normalizeExpand(req.odata.$expand);
     }
   } catch(e) {
     return ERR.ApiError(res, 400, ERR.ERRNO_INVALID_QUERY_STRING,

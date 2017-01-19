@@ -476,6 +476,20 @@ db().then(models => {
         });
       });
 
+      it('should expand Datastreams with multiple relations requesting ' +
+         '/Datastreams$expand=Thing,Sensor,Observations', done => {
+        const url = 'Datastreams?$expand=Thing,Sensor,Observations';
+        get(url).then(result => {
+          const thing = result.value[0].Thing;
+          thing[CONST.iotId].should.be.equal(id);
+          const sensor = result.value[0].Sensor;
+          sensor.should.be.instanceof(Object);
+          const observations = result.value[0].Observations;
+          observations.should.be.instanceof(Array).and.have.lengthOf(2);
+          done();
+        });
+      });
+
       it('should expand Locations and Things for request with ' +
          '$expand=Thing,Locations', done => {
         const url = 'HistoricalLocations?$expand=Thing,Locations';
@@ -489,13 +503,39 @@ db().then(models => {
       });
 
       describe('multilevel relations', () => {
-        const url = modelName + '?$expand=Datastreams/Observations';
         it('returns multilevel relations when they exist', done => {
+          const url = modelName + '?$expand=Datastreams/Observations';
           get(url).then(result => {
             const datastreams = result.value[0].Datastreams;
             const observations = datastreams[0].Observations;
             datastreams.should.be.instanceof(Array).and.have.lengthOf(1);
             observations.should.be.instanceof(Array).and.have.lengthOf(2);
+            done();
+          });
+        });
+
+        it('returns mutiple multilevel relations when they exist', done => {
+          let url = modelName + '?$expand=Datastreams/Thing';
+          url += ',Datastreams/Sensor';
+          get(url).then(result => {
+            const datastreams = result.value[0].Datastreams;
+            const thing = datastreams[0].Thing;
+            const sensor = datastreams[0].Sensor;
+            datastreams.should.be.instanceof(Array).and.have.lengthOf(1);
+            thing.should.be.instanceof(Object);
+            sensor.should.be.instanceof(Object);
+            done();
+          });
+        });
+
+        it('should expand HistoricalLocations with multiple relations ' +
+         'requesting HistoricalLocations?$expand=Thing/Datastreams', done => {
+          const url = 'HistoricalLocations?$expand=Thing/Datastreams';
+          get(url).then(result => {
+            const thing = result.value[0].Thing;
+            thing.should.be.instanceof(Object);
+            const datastreams = thing.Datastreams;
+            datastreams.should.be.instanceof(Array).and.have.lengthOf(1);
             done();
           });
         });
