@@ -476,6 +476,18 @@ db().then(models => {
         });
       });
 
+      it('should expand Locations and Things for request with ' +
+         '$expand=Thing,Locations', done => {
+        const url = 'HistoricalLocations?$expand=Thing,Locations';
+        get(url).then(result => {
+          const thing = result.value[0].Thing;
+          const locations = result.value[0].Locations;
+          thing[CONST.iotId].should.be.equal(id);
+          locations.should.be.instanceof(Array).and.have.lengthOf(1);
+          done();
+        });
+      });
+
       describe('multilevel relations', () => {
         const url = modelName + '?$expand=Datastreams/Observations';
         it('returns multilevel relations when they exist', done => {

@@ -273,8 +273,15 @@ export default config => {
           const include = getInclude(models);
           queryOptions.include.push(include);
 
+          // When expanding, we need to remove from the excluded attributes
+          // the expanded models and ids, otherwise won't be shown
           const filterExclude = queryOptions.attributes.exclude.filter(att => {
-            return att !== entities[models[0]] && att !== models[0];
+            return [
+              models[0],
+              models[0] + 'Id',
+              entities[models[0]],
+              entities[models[0]] + 'Id'
+            ].indexOf(att) === -1;
           });
           queryOptions.attributes.exclude = filterExclude;
         });
