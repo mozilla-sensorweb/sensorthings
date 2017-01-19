@@ -106,6 +106,9 @@ The currently-defined error responses are:
   * [PATCH /FeaturesOfInterest(:id)](#patch-featuresofinterestid)
   * [DELETE /FeaturesOfInterest(:id)](#delete-featuresofinterestid)
 
+* Data Array Extension
+  * [POST /CreateObservations](#post-createobservations)
+
 ## GET /
 ### Request
 ```ssh
@@ -1126,3 +1129,49 @@ curl -X DELETE -H "Cache-Control: no-cache" "http://localhost:8080/v1.0/Features
 ```ssh
 Response body empty. Response Headers: Status Code 204 No Content
 ```
+
+## POST /CreateObservations
+### Request
+```ssh
+curl -X POST -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d '
+ [
+  {
+    "Datastream": {
+      "@iot.id": 1
+    },
+    "components": [
+      "phenomenonTime",
+      "result",
+      "FeatureOfInterest\/id"
+    ],
+    "dataArray@iot.count": 3,
+    "dataArray": [
+      [
+        "2017-01-13T10:20:00.000Z",
+        90,
+        1
+      ],
+      [
+        "2017-01-13T10:21:00.000Z",
+        91,
+        1
+      ],
+      [
+        "2017-01-13T10:22:00.000Z",
+        92,
+        1
+      ]
+    ]
+  }
+]
+' "http://localhost:8080/v1.0/CreateObservations"
+```
+### Response
+```ssh
+[
+  "http://localhost:8080/v1.0/Observations(1)",
+  "http://localhost:8080/v1.0/Observations(2)",
+  "http://localhost:8080/v1.0/Observations(3)"
+]
+```
+
