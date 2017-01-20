@@ -55,6 +55,22 @@ It defaults to `v1.0` and the default endpoint URLs are of the form:
 
     https://<host-url>/v1.0/<api-endpoint>
 
+Additionally, there is an optional `hooks` configuration parameter that let's you define database hooks. This is an example of a database hook that adds a property to a `Things` instance that is being created:
+```
+const config = {
+  db: {
+    hooks: {
+      'beforeCreate': (instance, options) => {
+        if (instance.$modelOptions.name.plural === 'Things') {
+          instance.properties = Object.assign({}, instance.properties, {
+            customProperty: 'custom property value'
+          });
+        }
+      }
+    }
+  }
+};
+```
 For more details about the API you can check this [document](https://github.com/mozilla-sensorweb/sensorthings/blob/master/doc/API.md).
 
 ## Example requests
