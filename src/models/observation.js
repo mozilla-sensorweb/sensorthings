@@ -59,6 +59,14 @@ module.exports = (sequelize, DataTypes) => {
       autoIncrement: true,
       allowNull: false
     },
+    userId: {
+      type: DataTypes.STRING(255),
+      allowNull: true
+    },
+    clientId: {
+      type: DataTypes.STRING(255),
+      allowNull: true
+    },
     phenomenonTime: {
       type: DataTypes.DATE,
       allowNull: false,
@@ -128,7 +136,14 @@ module.exports = (sequelize, DataTypes) => {
         // we should extract it from Locations
         Observation.associations.FeatureOfInterest.mandatory = true;
       }
-    }
+    },
+    indexes: [{
+      fields: ['clientId']
+    }, {
+      fields: ['userId']
+    }, {
+      fields: ['clientId', 'userId']
+    }]
   });
 
   return Observation;

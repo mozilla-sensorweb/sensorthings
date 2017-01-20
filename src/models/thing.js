@@ -54,6 +54,14 @@ module.exports = (sequelize, DataTypes) => {
       autoIncrement: true,
       allowNull: false
     },
+    userId: {
+      type: DataTypes.STRING(255),
+      allowNull: true
+    },
+    clientId: {
+      type: DataTypes.STRING(255),
+      allowNull: true
+    },
     name: { type: DataTypes.STRING(255), allowNull: false },
     description: { type: DataTypes.STRING(500), allowNull: false },
     properties: { type: DataTypes.JSONB }
@@ -101,7 +109,14 @@ module.exports = (sequelize, DataTypes) => {
           });
         };
       }
-    }
+    },
+    indexes: [{
+      fields: ['clientId']
+    }, {
+      fields: ['userId']
+    }, {
+      fields: ['clientId', 'userId']
+    }]
   });
 
   return Thing;

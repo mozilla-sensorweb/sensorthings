@@ -35,6 +35,14 @@ module.exports = (sequelize, DataTypes) => {
       autoIncrement: true,
       allowNull: false
     },
+    userId: {
+      type: DataTypes.STRING(255),
+      allowNull: true
+    },
+    clientId: {
+      type: DataTypes.STRING(255),
+      allowNull: true
+    },
     time: {
       type: DataTypes.DATE,
       allowNull: false,
@@ -60,7 +68,14 @@ module.exports = (sequelize, DataTypes) => {
           through: 'HistoricalLocationsLocations'
         });
       }
-    }
+    },
+    indexes: [{
+      fields: ['clientId']
+    }, {
+      fields: ['userId']
+    }, {
+      fields: ['clientId', 'userId']
+    }]
   });
 
   return HistoricalLocation;

@@ -39,6 +39,14 @@ module.exports = (sequelize, DataTypes) => {
       autoIncrement: true,
       allowNull: false
     },
+    userId: {
+      type: DataTypes.STRING(255),
+      allowNull: true
+    },
+    clientId: {
+      type: DataTypes.STRING(255),
+      allowNull: true
+    },
     name: { type: DataTypes.STRING(255), allowNull: false },
     definition: {
       type: DataTypes.TEXT,
@@ -53,7 +61,14 @@ module.exports = (sequelize, DataTypes) => {
       associate: db => {
         ObservedProperty.hasMany(db.Datastreams);
       }
-    }
+    },
+    indexes: [{
+      fields: ['clientId']
+    }, {
+      fields: ['userId']
+    }, {
+      fields: ['clientId', 'userId']
+    }]
   });
 
   return ObservedProperty;
