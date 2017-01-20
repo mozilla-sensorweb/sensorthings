@@ -268,23 +268,17 @@ export default config => {
       // navigation property can be followed by a forward slash and another
       // navigation property to enable identifying a multi-level relationship.
       if (expand) {
-        expand.forEach(model => {
-          const models = model.split('/');
-          const include = getInclude(models);
-          queryOptions.include.push(include);
-
-          // When expanding, we need to remove from the excluded attributes
-          // the expanded models and ids, otherwise won't be shown
-          const filterExclude = queryOptions.attributes.exclude.filter(att => {
-            return [
-              models[0],
-              models[0] + 'Id',
-              entities[models[0]],
-              entities[models[0]] + 'Id'
-            ].indexOf(att) === -1;
+        queryOptions.include = getInclude(req.normalizedExpand);
+        // When expanding, we need to remove from the excluded attributes
+        // the expanded models and ids, otherwise won't be shown
+        const filterExclude = queryOptions.attributes.exclude.filter(att => {
+          return expand.every(m => {
+            m = m.split('/')[0];
+            const avoidFilter = [m, m + 'Id', entities[m], entities[m] + 'Id'];
+            return avoidFilter.indexOf(att) === -1;
           });
-          queryOptions.attributes.exclude = filterExclude;
         });
+        queryOptions.attributes.exclude = filterExclude;
       }
 
       if (filter) {
@@ -321,18 +315,21 @@ export default config => {
     });
   };
 
-  const getInclude = models => {
-    let includes = {};
-    let next = includes;
-    models.forEach((model, index) => {
-      next.model = db[modelNames[model]];
-      if (index < models.length - 1) {
-        next.include = {};
-        next = next.include;
-      }
-    });
+  // Given a normalized expand object, it creates a include object that
+  // Sequelize can understand.
+  const getInclude = (expand) => {
+    if (!expand) {
+      return;
+    }
 
-    return includes;
+    let result = [];
+    Object.keys(expand).forEach(model => {
+      result.push({
+        model: db[modelNames[model]],
+        include: getInclude(expand[model])
+      })
+    });
+    return result;
   }
 
   /*
