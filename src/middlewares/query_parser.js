@@ -71,9 +71,12 @@ export default (req, res, next) => {
   }
 
   try {
-    const decodedQuery =  decodeURIComponent(req.originalUrl.split('?').pop());
     // XXX odata-parser does not fully support SensorThings OData language.
-    req.odata = odata.parse(decodedQuery);
+    req.odata = {};
+    Object.keys(req.query).forEach(k => {
+      Object.assign(req.odata, odata.parse(k + '=' + req.query[k]));
+    });
+
     if (req.odata && req.odata.$filter) {
       req.odata.$filter = getFilter(req.odata.$filter);
     }

@@ -206,6 +206,20 @@ db().then(models => {
           done();
         });
       });
+
+      describe('url encoding', () => {
+        it('should correctly decode spaces', done => {
+          const entity = Object.assign({}, CONST.ThingsEntity);
+          entity.name = 'thing 1';
+          models.Things.create(entity).then(() => {
+            get(CONST.things + '?$filter=name%20eq%20%27thing+1%27')
+            .then(result => {
+              result[CONST.iotCount].should.be.equal(1);
+              done();
+            });
+          });
+        });
+      })
     });
 
     describe('$orderby', () => {
