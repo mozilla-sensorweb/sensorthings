@@ -183,6 +183,30 @@ db().then(models => {
         });
       });
 
+      it('should filter using le comparator', done => {
+        get(CONST.observations + '?$filter=result le \'1\'')
+        .then(result => {
+          result[CONST.iotCount].should.be.equal(2);
+          done();
+        });
+      });
+
+      it('should filter using ne comparator', done => {
+        get(CONST.observations + '?$filter=result ne \'0\'')
+        .then(result => {
+          result[CONST.iotCount].should.be.equal(14);
+          done();
+        });
+      });
+
+      it('should filter using ge comparator', done => {
+        get(CONST.observations + '?$filter=result ge \'9\'')
+        .then(result => {
+          result[CONST.iotCount].should.be.equal(1);
+          done();
+        });
+      });
+
       it('should filter ints with strings', done => {
         get(CONST.observations + '?$filter=result gt \'5\'')
         .then(result => {

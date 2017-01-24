@@ -10,6 +10,11 @@ fs.readdirSync(path.join(__dirname, 'query')).forEach(file => {
   parsers['$' + file.replace('.js', '')] = require(currentPath);
 });
 
+const mapComparators = {
+  'ge': 'gte',
+  'le': 'lte'
+}
+
 // Utility method that given an array of models (or multilevel models),
 // it returns an object, removing duplicates and nesting elements
 // ['A/B', A/D', 'C'] => {'A': {'B': {}, 'D': {}}, 'C': {}}
@@ -40,13 +45,14 @@ const getFilter = parsedFilter => {
   }
 
   let literal = parsedFilter.right.value;
+  let type = mapComparators[parsedFilter.type] || parsedFilter.type;
   let result = {};
   let value = {};
 
   if (parsedFilter.type === 'eq') {
     value = literal
   } else {
-    value[parsedFilter.type] = literal;
+    value[type] = literal;
   }
 
   result[parsedFilter.left.name] = value;
