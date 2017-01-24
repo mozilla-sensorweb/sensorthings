@@ -326,6 +326,20 @@ db().then(models => {
           });
         });
 
+        it('should order by name and by description without space', done => {
+          get(modelName + '?$orderby=name,description')
+          .then(result => {
+            result[CONST.iotCount].should.be.equal(count);
+            // Checking that they are in order
+            for (let i = 0; i < count; i++) {
+              result.value[i].name.should.be.equal(i < 5 ? '1' : '2');
+              const desc = i < 5 ? 5 + i : i - 4;
+              result.value[i].description.should.be.equal(String(desc));
+            }
+            done();
+          });
+        });
+
         it('should order by name and then descending by description', done => {
           get(modelName + '?$orderby=name, description desc')
           .then(result => {
