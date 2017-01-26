@@ -54,6 +54,30 @@ commonTests(CONST.things, 8888, mandatory, optional).then(tester => {
         });
       });
 
+      it('should skip after a second Location', done => {
+        let thing = Object.assign({}, CONST.ThingsEntity);
+        thing.Locations = [Object.assign({}, CONST.LocationsEntity)];
+        tester.server.post('/v1.0/Things').send(thing)
+        .expect('Content-Type', /json/)
+        .expect(201)
+        .end((err, res) => {
+          should.not.exist(err);
+          const thing1 = res.body[CONST.iotId];
+          const url = '/v1.0/Things(' + thing1 + ')/Locations?$skip=1';
+          tester.server.get(url)
+          .expect('Content-Type', /json/)
+          .expect(200)
+          .end((err1, res1) => {
+            should.not.exist(err1);
+            res1.status.should.be.equal(200);
+            res1.body['@iot.count'].should.be.equal(1);
+            res1.body.value.should.be.instanceof(Array);
+            res1.body.value.length.should.be.equal(0);
+            done();
+          });
+        });
+      });
+
       it('should replace the association when patching a Thing with a new ' +
          'Location with the same encodingType', done => {
         db().then(models => {
