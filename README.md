@@ -60,10 +60,12 @@ We are automatically running the [Test Suite for the OGC SensorThings API](https
 | Conformance Class                     | Reference | Test Status              |
 |---------------------------------------|-----------|--------------------------| 
 | Sensing Core                          | A.1       | 6 passed, 0 failed       |
-| Filtering Extension                   | A.2       | 5 passed, 3 failed       |
+| Filtering Extension                   | A.2       | 7 passed, 1 failed*      |
 | Create-Update-Delete                  | A.3       | 9 passed, 0 failed       |
 | Batch Request                         | A.4       | Tests not implemented    |
 | Sensing MultiDatastream Extension     | A.5       | Tests not implemented    |
 | Sensing Data Array Extension          | A.6       | Tests not implemented    |
 | MQTT Extension for Create and Update  | A.7       | Tests not implemented    |
 | MQTT Extension for Receiving Updates  | A.8       | Tests not implemented    |
+
+* The failure is actually an OGC test suite issue: https://github.com/opengeospatial/ets-sta10/issues/35
