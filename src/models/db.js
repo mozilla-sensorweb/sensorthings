@@ -10,6 +10,7 @@ import path             from 'path';
 import Sequelize        from 'sequelize';
 
 import {
+  belongsToMany,
   entities,
   integrityConstrains,
   iotId,
@@ -184,6 +185,7 @@ export default config => {
 
   const get = (modelName, req, queryOptions) => {
     const lastResource = req.lastResource;
+    let isBelongsToMany;
     if (lastResource) {
       // lastResource is an object of this form:
       // {
@@ -211,6 +213,14 @@ export default config => {
         return include.model === lastResource.model;
       });
 
+      try {
+        const assoc = lastResource.model.associations[modelName];
+        isBelongsToMany = assoc.associationType === belongsToMany;
+      } catch(e) {
+        isBelongsToMany = false;
+      }
+
+
       if (!expanded) {
         queryOptions.include.push({
           model: lastResource.model,
@@ -234,6 +244,16 @@ export default config => {
       top: queryOptions.limit
     };
 
+    // Sequelize is not handling properly limit in a BelongsToMany
+    // relationship. Luckily, this circunstance only occurs on Thing/Locations
+    // relationships, which in theory shouldn't return much instances. We need
+    // to manually limit the results after the request.
+    // We'll probably need include.separate = true feature
+    // https://github.com/sequelize/sequelize/issues/4376
+    if (isBelongsToMany) {
+      Reflect.deleteProperty(queryOptions, 'limit');
+    }
+
     return db[modelName].findAndCountAll(queryOptions).then(result => {
       const singularName = entities[modelName];
       let instance = result.rows;
@@ -242,6 +262,11 @@ export default config => {
         // that is a single association.
         instance = result.rows[0];
       }
+
+      if (isBelongsToMany) {
+        instance = instance.slice(0, options.top);
+      }
+
       options.totalCount = result.count;
       return Promise.resolve({
         code: 200,
