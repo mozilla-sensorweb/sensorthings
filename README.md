@@ -60,8 +60,8 @@ We are automatically running the [Test Suite for the OGC SensorThings API](https
 | Conformance Class                     | Reference | Test Status              |
 |---------------------------------------|-----------|--------------------------| 
 | Sensing Core                          | A.1       | 6 passed, 0 failed       |
-| Filtering Extension                   | A.2       | 5 passed, 3 failed       |
-| Create-Update-Delete                  | A.3       | 7 passed, 1 failed*      |
+| Filtering Extension                   | A.2       | 7 passed, 1 failed*      |
+| Create-Update-Delete                  | A.3       | 9 passed, 0 failed       |
 | Batch Request                         | A.4       | Tests not implemented    |
 | Sensing MultiDatastream Extension     | A.5       | Tests not implemented    |
 | Sensing Data Array Extension          | A.6       | Tests not implemented    |
