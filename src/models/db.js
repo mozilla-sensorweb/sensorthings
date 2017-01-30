@@ -12,9 +12,11 @@ import Sequelize        from 'sequelize';
 import {
   belongsToMany,
   entities,
+  functionCall,
   integrityConstrains,
   iotId,
   limit,
+  mapFunctions,
   modelNames
 } from '../constants';
 
@@ -115,6 +117,26 @@ export default config => {
                                        req, exclude);
       });
     });
+  };
+
+  const getArg = arg => {
+    if (arg.type === 'literal') {
+      const literal = db.sequelize.literal('\'' + arg.value + '\'');
+      return db.sequelize.fn(mapFunctions.geography, literal);
+    }
+    return db.sequelize.col(arg.name);
+  };
+
+  const getWhere = filter => {
+    if (filter.type && filter.type === functionCall) {
+      const arg0 = getArg(filter.args[0]);
+      const arg1 = getArg(filter.args[1]);
+      const where = db.sequelize.fn(mapFunctions[filter.func], arg0, arg1);
+
+      return db.sequelize.where(where, true);
+    }
+
+    return filter;
   };
 
   const getById = (modelName, req, queryOptions) => {
@@ -338,7 +360,8 @@ export default config => {
       }
 
       if (filter) {
-        Object.assign(queryOptions.where, filter);
+        const filterWhere = getWhere(filter);
+        queryOptions.where = db.sequelize.and(filterWhere, queryOptions.where);
       }
 
       // req.params[0] may contain the id of the final resource from a URL of
