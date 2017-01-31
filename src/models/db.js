@@ -65,7 +65,10 @@ export default config => {
     host,
     port,
     dialect: 'postgres',
-    logging: false
+    logging: false,
+    define: {
+      hooks: config.hooks
+    }
   });
 
   db = {};
