@@ -2,6 +2,9 @@ import fs         from 'fs';
 import odata      from 'odata-parser';
 import path       from 'path';
 import * as ERR   from '../errors';
+import {
+  functionCall
+} from '../constants'
 
 const parsers = {};
 
@@ -33,6 +36,10 @@ const normalizeExpand = expand => {
 const getFilter = parsedFilter => {
   if (!parsedFilter) {
     return {};
+  }
+
+  if (parsedFilter.type === functionCall) {
+    return parsedFilter;
   }
 
   // At the moment, we only support 'Property + Comparission Op + literal'

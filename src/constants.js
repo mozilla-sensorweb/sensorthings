@@ -16,6 +16,8 @@ export const featureOfInterestNavigationLink =
 export const featuresOfInterestNavigationLink =
   featuresOfInterest + navigationLink;
 
+export const functionCall = 'functioncall';
+
 export const historicalLocations = 'HistoricalLocations';
 export const historicalLocationsNavigationLink =
   historicalLocations + navigationLink;
@@ -44,6 +46,11 @@ export const thingNavigationLink = thing + navigationLink;
 export const thingsNavigationLink = things + navigationLink;
 
 export const thingLocations = 'ThingLocations';
+
+export const mapFunctions = {
+  'geography': 'ST_GeogFromText',
+  'geo.intersects': 'ST_Intersects'
+};
 
 export const entities = {
   'Datastreams': 'Datastream',
