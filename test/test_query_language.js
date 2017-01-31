@@ -231,6 +231,50 @@ db().then(models => {
         });
       });
 
+      describe('filter locations', () => {
+        beforeEach(done => {
+          models.sequelize.transaction(transaction => {
+            return Promise.all(Object.keys(CONST.entities).map(name => {
+              return models[name].destroy({ transaction, where: {} });
+            }));
+          }).then(() => {
+            const loc = Object.assign({}, CONST.LocationsEntity);
+            models.Locations.create(loc).then(() => done());
+          });
+        });
+
+        it('should filter by location', done => {
+          const coords = [
+            '-114.34 51.20',
+            '-113.72 51.19',
+            '-113.67 50.85',
+            '-114.46 50.83',
+            '-114.34 51.20'
+          ];
+          const polygon = 'geography\'POLYGON((' + coords.join(',') + '))\')';
+          get(CONST.locations + '?$filter=geo.intersects(location, ' + polygon)
+          .then(result => {
+            result[CONST.iotCount].should.be.equal(1);
+            done();
+          });
+        });
+
+        it('should return [] when there is no location that matches', done => {
+          const coords = [
+            '-113 51',
+            '-110 51',
+            '-110 50',
+            '-113 51'
+          ];
+          const polygon = 'geography\'POLYGON((' + coords.join(',') + '))\')';
+          get(CONST.locations + '?$filter=geo.intersects(location, ' + polygon)
+          .then(result => {
+            result[CONST.iotCount].should.be.equal(0);
+            done();
+          });
+        });
+      })
+
       describe('url encoding', () => {
         it('should correctly decode spaces', done => {
           const entity = Object.assign({}, CONST.ThingsEntity);
