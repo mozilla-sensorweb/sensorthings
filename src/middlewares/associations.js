@@ -76,11 +76,6 @@ export default version => {
                               ERR.BAD_REQUEST);
         }
 
-        const type = association.associationType;
-        if ([hasMany, belongsToMany].indexOf(type) > -1) {
-          return verifyAssociations(resourcesLeft, resource, previousResource);
-        }
-
         // Check that the association between the two entities actually exists.
         previousModel.findById(previousId).then(previousEntity => {
           if (!previousEntity) {
@@ -88,6 +83,7 @@ export default version => {
                                 ERR.NOT_FOUND);
           }
 
+          const type = association.associationType;
           const name = model.options.name.singular;
 
           switch (type) {
