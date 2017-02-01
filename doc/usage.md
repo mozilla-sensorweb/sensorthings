@@ -259,7 +259,7 @@ curl -X POST -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d
 #### Response
 ```ssh
 {
-  "@iot.id": "2",
+  "@iot.id": 1,
   "@iot.selfLink": "http://localhost:8080/v1.0/FeaturesOfInterest(1)",
   "Observations@iot.navigationLink": "http://localhost:8080/v1.0/FeaturesOfInterest(1)/Observations",
   "name": "Weather Station YYC.",
@@ -291,7 +291,7 @@ curl -X POST -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d
   "@iot.id": 1,
   "@iot.selfLink": "http://localhost:8080/v1.0/Observations(1)",
   "Datastream@iot.navigationLink": "http://localhost:8080/v1.0/Observations(1)/Datastream",
-  "FeatureOfInterest@iot.navigationLink": "http://localhost:8080/v1.0/Observations(1)/FeaturesOfInterest(2)",
+  "FeatureOfInterest@iot.navigationLink": "http://localhost:8080/v1.0/Observations(1)/FeaturesOfInterest",
   "phenomenonTime": "2016-11-18T11:04:15.790Z",
   "resultTime": "2016-11-18T11:04:15.790Z",
   "result": 12.4,
@@ -350,7 +350,7 @@ curl -X POST -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d
 ### Response
 ```ssh
 {
-  "@iot.id": "1",
+  "@iot.id": 1,
   "@iot.selfLink": "http://localhost:8080/v1.0/Datastreams(1)",
   "Thing@iot.navigationLink": "http://localhost:8080/v1.0/Datastreams(1)/Thing",
   "Sensor@iot.navigationLink": "http://localhost:8080/v1.0/Datastreams(1)/Sensor",
@@ -398,7 +398,7 @@ Which should reply with something like:
 
 ```ssh
 {
-  "@iot.id": "1",
+  "@iot.id": 1,
   "@iot.selfLink": "http://localhost:8080/v1.0/Observations(1)",
   "Datastream@iot.navigationLink": "http://localhost:8080/v1.0/Observations(1)/Datastream",
   "FeatureOfInterest@iot.navigationLink": "http://localhost:8080/v1.0/Observations(1)/FeatureOfInterest",
@@ -442,7 +442,7 @@ curl -X GET -H "Cache-Control: no-cache" "http://localhost:8080/v1.0/Datastreams
   "@iot.count": 1,
   "value": [
     {
-      "@iot.id": "1",
+      "@iot.id": 1,
       "@iot.selfLink": "http://localhost:8080/v1.0/Datastreams(1)",
       "Thing@iot.navigationLink": "http://localhost:8080/v1.0/Datastreams(1)/Thing",
       "Sensor@iot.navigationLink": "http://localhost:8080/v1.0/Datastreams(1)/Sensor",
@@ -480,7 +480,7 @@ curl -X GET -H "Cache-Control: no-cache" "http://localhost:8080/v1.0/Datastreams
 #### Response
 ```ssh
 {
-  "@iot.id": "1",
+  "@iot.id": 1,
   "@iot.selfLink": "http://localhost:8080/v1.0/Things(1)",
   "Locations@iot.navigationLink": "http://localhost:8080/v1.0/Things(1)/Locations",
   "HistoricalLocations@iot.navigationLink": "http://localhost:8080/v1.0/Things(1)/HistoricalLocations",
@@ -508,7 +508,7 @@ curl -X GET -H "Cache-Control: no-cache" "http://localhost:8080/v1.0/Things(1)/L
   "@iot.count": 1,
   "value": [
     {
-      "@iot.id": "1",
+      "@iot.id": 1,
       "@iot.selfLink": "http://localhost:8080/v1.0/Locations(1)",
       "Things@iot.navigationLink": "http://localhost:8080/v1.0/Locations(1)/Things",
       "HistoricalLocations@iot.navigationLink": "http://localhost:8080/v1.0/Locations(1)/HistoricalLocations",
@@ -545,7 +545,7 @@ curl -X GET -H "Cache-Control: no-cache" "http://localhost:8080/v1.0/Datastreams
   "@iot.count": 2,
   "value": [
     {
-      "@iot.id": "1",
+      "@iot.id": 1,
       "@iot.selfLink": "http://localhost:8080/v1.0/Observations(1)",
       "Datastream@iot.navigationLink": "http://localhost:8080/v1.0/Observations(1)/Datastream",
       "FeatureOfInterest@iot.navigationLink": "http://localhost:8080/v1.0/Observations(1)/FeatureOfInterest",
@@ -555,7 +555,7 @@ curl -X GET -H "Cache-Control: no-cache" "http://localhost:8080/v1.0/Datastreams
       "parameters": null
     },
     {
-      "@iot.id": "2",
+      "@iot.id": 2,
       "@iot.selfLink": "http://localhost:8080/v1.0/Observations(2)",
       "Datastream@iot.navigationLink": "http://localhost:8080/v1.0/Observations(2)/Datastream",
       "FeatureOfInterest@iot.navigationLink": "http://localhost:8080/v1.0/Observations(2)/FeatureOfInterest",
