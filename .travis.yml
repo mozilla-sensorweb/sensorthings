@@ -10,9 +10,6 @@ env:
   - GIT_NAME="Isabel Rios"
   - GIT_EMAIL="isabelrios@gmail.com"
   - DEPLOY_BRANCH="master"
-matrix:
-  allow_failures:
-  - env: TESTS=OGC_TESTS
 before_install:
 - if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then openssl aes-256-cbc -K $encrypted_adf0efbba173_key -iv $encrypted_adf0efbba173_iv -in id_rsa.enc -out id_rsa -d; fi
 - java -version
