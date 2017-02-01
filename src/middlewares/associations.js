@@ -117,7 +117,7 @@ export default version => {
                   return ERR.ApiError(res, 404, ERR.ERRNO_RESOURCE_NOT_FOUND,
                                       ERR.NOT_FOUND);
                 }
-
+                resource.id = entity && entity.id;
                 verifyAssociations(resourcesLeft, resource, previousResource);
               });
             default:
